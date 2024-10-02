@@ -1,0 +1,46 @@
+# Python-specific ignores
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+venv.bak/
+*.env
+*.env.*
+
+# SQLite database files
+*.db
+*.sqlite3
+
+# FastAPI log files
+logs/
+*.log
+
+# Python virtual environment files
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Pytest cache and testing-related ignores
+.pytest_cache/
+coverage/
+htmlcov/
+.tox/
+.cache/
+*.cover
+
+# Uvicorn reload file (optional)
+*.reload
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
