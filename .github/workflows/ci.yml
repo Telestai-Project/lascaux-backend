@@ -29,7 +29,7 @@ jobs:
     - name: Start Cassandra
       run: |
         python start_cassandra.py
-        sleep 30  # Wait for 30 seconds to ensure Cassandra is ready
+        sleep 60  # Wait for 30 seconds to ensure Cassandra is ready
 
     - name: Run tests
       run: |
