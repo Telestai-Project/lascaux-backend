@@ -5,3 +5,4 @@ pytest-asyncio
 sqlalchemy
 httpx
 requests
+cassandra-driver
