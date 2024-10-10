@@ -9,6 +9,7 @@ post_router = APIRouter()
 def create_post(post: PostCreate):
     post_id = uuid4()
     db_post = Post(id=post_id, **post.dict())
+    print(f"Creating post with title: {post.title}")  # Debugging line
     db_post.save()
     return db_post
 

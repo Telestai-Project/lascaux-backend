@@ -23,8 +23,10 @@ class PostBase(BaseModel):
     is_flagged: Optional[bool] = False
     ipfs_hash: Optional[str] = None
 
-class PostCreate(PostBase):
-    user_id: UUID
+class PostCreate(BaseModel):
+    user_id: str
+    title: str
+    content: str
 
 class PostUpdate(BaseModel):
     content: Optional[str] = None
@@ -34,6 +36,7 @@ class PostUpdate(BaseModel):
 class PostResponse(PostBase):
     id: UUID
     user_id: UUID
+    title: str
 
     class Config:
         orm_mode = True
