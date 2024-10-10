@@ -26,10 +26,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Initialize database
+    - name: Start Cassandra
       run: |
-        # Example: Run a script to initialize the database
-        python -c "from app.database import init_db; init_db()"
+        python start_cassandra.py
+        sleep 60  # Wait for 30 seconds to ensure Cassandra is ready
 
     - name: Run tests
       run: |

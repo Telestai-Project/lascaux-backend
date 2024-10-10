@@ -4,7 +4,7 @@ Lascaux is a decentralized, text-based social media platform designed to empower
 
 ## Features:
 - **Wallet-Based Authentication**: Users authenticate using a signature from their Telestai wallet.
-- **Hybrid-Decentralized Architecture**: Content is stored locally on each node's SQLite database with long-term storage on IPFS for redundancy.
+- **Hybrid-Decentralized Architecture**: Content is stored in a Cassandra database with long-term storage on IPFS for redundancy.
 - **Voting-Based Moderation**: Community voting drives content approval and moderation, with potential AI assistance.
 - **Open Source**: Lascaux is open-source, allowing users to fork, run their own instances, and contribute to the platform.
 
@@ -21,12 +21,12 @@ Lascaux is a decentralized, text-based social media platform designed to empower
    pip install -r requirements.txt
    ```
 
-3. Initialize the database:
+3. Start the Cassandra database:
    ```bash
-   python -c "from app.database import init_db; init_db()"
+   python start_cassandra.py
    ```
 
-4. Run the FastAPI application:
+5. Run the FastAPI application:
    ```bash
    uvicorn app.main:app --reload
    ```
@@ -72,7 +72,7 @@ Lascaux is a decentralized, text-based social media platform designed to empower
 - Python 3.8+
 - FastAPI
 - Uvicorn
-- SQLAlchemy
+- Cassandra
 - Pytest
 - HTTPX
 

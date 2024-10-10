@@ -1,17 +1,18 @@
 from pydantic import BaseModel
 from typing import Optional
+from uuid import UUID
 
 # User Schemas
 class UserBase(BaseModel):
     wallet_address: str
     username: str
-    bio: str = None
+    bio: Optional[str] = None
 
 class UserCreate(UserBase):
     pass
 
 class UserResponse(UserBase):
-    id: int
+    id: UUID
 
     class Config:
         orm_mode = True
@@ -23,7 +24,7 @@ class PostBase(BaseModel):
     ipfs_hash: Optional[str] = None
 
 class PostCreate(PostBase):
-    user_id: int
+    user_id: UUID
 
 class PostUpdate(BaseModel):
     content: Optional[str] = None
@@ -31,50 +32,47 @@ class PostUpdate(BaseModel):
     ipfs_hash: Optional[str] = None
 
 class PostResponse(PostBase):
-    id: int
-    user_id: int
+    id: UUID
+    user_id: UUID
 
     class Config:
         orm_mode = True
 
 # Vote Schemas
-
 class VoteBase(BaseModel):
-    post_id: int
-    user_id: int
+    post_id: UUID
+    user_id: UUID
     vote_value: int
 
 class VoteCreate(VoteBase):
     pass
 
 class VoteResponse(VoteBase):
-    id: int
+    id: UUID
 
     class Config:
         orm_mode = True
 
 # Comment Schemas
-
 class CommentBase(BaseModel):
-    post_id: int
-    user_id: int
+    post_id: UUID
+    user_id: UUID
     comment_text: str
-    parent_comment_id: Optional[int] = None
+    parent_comment_id: Optional[UUID] = None
 
 class CommentCreate(CommentBase):
     pass
 
 class CommentResponse(CommentBase):
-    id: int
+    id: UUID
 
     class Config:
         orm_mode = True
 
 # Moderation Schemas
-
 class ModerationLogBase(BaseModel):
-    post_id: int
-    user_id: Optional[int] = None
+    post_id: UUID
+    user_id: Optional[UUID] = None
     reason: str
     flagged_by_ai: Optional[bool] = False
 
@@ -82,7 +80,7 @@ class ModerationLogCreate(ModerationLogBase):
     pass
 
 class ModerationLogResponse(ModerationLogBase):
-    id: int
+    id: UUID
 
     class Config:
         orm_mode = True
