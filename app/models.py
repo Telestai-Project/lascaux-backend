@@ -21,6 +21,7 @@ class Post(Model):
     __keyspace__ = 'store'
     id = columns.UUID(primary_key=True, default=uuid4)
     user_id = columns.UUID(required=True)
+    title = columns.Text(required=False)  # Add this line
     content = columns.Text(required=True)
     created_at = columns.DateTime()
     updated_at = columns.DateTime()

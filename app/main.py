@@ -42,5 +42,5 @@ async def healthcheck():
     return {"status": "ok"}
 
 # Ensure Cassandra is stopped when the application exits
-import atexit
-atexit.register(stop_cassandra_container)
+# import atexit
+# atexit.register(stop_cassandra_container)

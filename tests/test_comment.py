@@ -8,6 +8,7 @@ from uuid import uuid4
 @pytest.fixture(scope="session", autouse=True)
 def setup_cassandra():
     start_cassandra_container()
+    yield
 
 @pytest.fixture(scope="function", autouse=True)
 def setup_database():
