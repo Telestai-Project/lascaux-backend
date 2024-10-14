@@ -1,18 +1,29 @@
 from pydantic import BaseModel
 from typing import Optional
 from uuid import UUID
+from datetime import datetime
 
 # User Schemas
 class UserBase(BaseModel):
     wallet_address: str
-    username: str
+    display_name: str  # Changed from username to display_name
     bio: Optional[str] = None
+    profile_photo_url: Optional[str] = None
 
 class UserCreate(UserBase):
-    pass
+    signature: str
+    challenge: str
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: UUID
+    wallet_address: str
+    display_name: str
+    bio: Optional[str] = None  # Make bio optional
+    profile_photo_url: Optional[str] = None
+    created_at: datetime
+    last_login: Optional[datetime] = None  # Make last_login optional
+    access_token: str
+    token_type: str
 
     class Config:
         orm_mode = True
@@ -37,6 +48,8 @@ class PostResponse(PostBase):
     id: UUID
     user_id: UUID
     title: str
+    created_at: datetime
+    votes: int
 
     class Config:
         orm_mode = True
@@ -87,3 +100,7 @@ class ModerationLogResponse(ModerationLogBase):
 
     class Config:
         orm_mode = True
+
+# Authentication
+class TokenData(BaseModel):
+    wallet_address: str

@@ -16,8 +16,19 @@ from app.comment import comment_router
 from app.moderation_log import moderation_log_router
 from app.database import init_db
 from app.docker_utils import start_cassandra_container, stop_cassandra_container
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
+
+# Add CORS middleware to the app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 # Start the Cassandra container
 start_cassandra_container()
