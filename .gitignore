@@ -10,6 +10,7 @@ ENV/
 venv.bak/
 *.env
 *.env.*
+.venv/
 
 # SQLite database files
 *.db
