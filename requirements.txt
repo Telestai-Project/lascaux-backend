@@ -6,3 +6,4 @@ sqlalchemy
 httpx
 requests
 cassandra-driver
+python-dotenv
