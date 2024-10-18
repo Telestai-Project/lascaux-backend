@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from app.models import Post, Vote  # Ensure Vote is imported
 from app.schemas import PostCreate, PostUpdate, PostResponse
 from uuid import uuid4
 from typing import List
+from app.models import User
 from datetime import datetime
 import logging
+from app.dependencies import get_current_user
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -12,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 post_router = APIRouter()
 
-VOTE_THRESHOLD = -100  # Define the vote threshold
+VOTE_THRESHOLD = -20  # Define the vote threshold
 
 @post_router.get("/", response_model=List[PostResponse])
 def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, le=100)):
@@ -63,10 +65,10 @@ def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
     return post_responses
 
 @post_router.post("/", response_model=PostResponse)
-def create_post(post: PostCreate):
+def create_post(post: PostCreate, current_user: User = Depends(get_current_user)):
     new_post = Post(
         id=uuid4(),
-        user_id=post.user_id,
+        user_id=current_user.id,  # Use the authenticated user's ID
         title=post.title,
         content=post.content,
         created_at=datetime.now(),

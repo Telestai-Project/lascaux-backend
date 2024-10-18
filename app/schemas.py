@@ -14,6 +14,11 @@ class UserCreate(UserBase):
     signature: str
     challenge: str
 
+class UserProfileResponse(BaseModel):
+    profile_photo_url: str
+    wallet_address: str
+    display_name: str
+
 class UserResponse(BaseModel):
     id: UUID
     wallet_address: str
@@ -57,7 +62,6 @@ class PostResponse(PostBase):
 # Vote Schemas
 class VoteBase(BaseModel):
     post_id: UUID
-    user_id: UUID
     vote_value: int
 
 class VoteCreate(VoteBase):
