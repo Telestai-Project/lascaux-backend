@@ -11,3 +11,4 @@ PyJWT
 uvloop
 httptools
 httptools==0.1.1
+python-jose
