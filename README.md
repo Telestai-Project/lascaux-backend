@@ -30,7 +30,10 @@ Lascaux is a decentralized, text-based social media platform designed to empower
    ```bash
    uvicorn app.main:app --reload
    ```
-
+6. Stop the Cassandra database when you're done:
+   ```bash
+   python stop_cassandra.py
+   ```
 ## Routes
 
 ### Authentication
