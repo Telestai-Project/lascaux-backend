@@ -1,6 +1,4 @@
 import pytest
-from httpx import AsyncClient, ASGITransport
-from app.main import app
 from app.database import init_db
 from app.docker_utils import start_cassandra_container, stop_cassandra_container
 import uuid
@@ -10,6 +8,12 @@ def setup_cassandra():
     start_cassandra_container()
     yield
 
+@pytest.fixture(scope="session", autouse=True)
+def close_cassandra():
+    yield
+    stop_cassandra_container()
+    
+    
 @pytest.fixture(scope="function", autouse=True)
 def setup_database():
     init_db()

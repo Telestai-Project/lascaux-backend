@@ -1,0 +1,2 @@
+[MASTER]
+init-hook='import sys; sys.path.append("/lascaux-backend/venv/lib/python3.10/site-packages")'
