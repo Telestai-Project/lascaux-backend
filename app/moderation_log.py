@@ -8,7 +8,7 @@ moderation_log_router = APIRouter()
 @moderation_log_router.post("/", response_model=ModerationLogResponse)
 def create_moderation_log(log: ModerationLogCreate):
     log_id = uuid4()
-    db_log = ModerationLog(id=log_id, **log.dict())
+    db_log = ModerationLog(id=log_id, **log.model_dump())
     db_log.save()
     return db_log
 

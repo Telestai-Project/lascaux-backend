@@ -1,10 +1,8 @@
-import os
 from fastapi import APIRouter, HTTPException
 from app.models import User
-from app.schemas import UserCreate, UserResponse
+from app.schemas import  UserResponse
 from uuid import UUID
-from datetime import datetime, timedelta
-from fastapi.encoders import jsonable_encoder
+
 
 user_router = APIRouter()
 

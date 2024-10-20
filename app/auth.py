@@ -1,6 +1,6 @@
 # app/api/auth.py
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException
 from datetime import timedelta, datetime
 from app.models import User
 from app.schemas import UserCreate, UserResponse

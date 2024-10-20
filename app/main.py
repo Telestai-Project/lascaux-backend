@@ -1,7 +1,3 @@
-import os
-import socket
-import subprocess
-import requests
 from fastapi import FastAPI
 from app.auth import auth_router
 from app.content import content_router
@@ -15,7 +11,7 @@ from app.vote import vote_router
 from app.comment import comment_router
 from app.moderation_log import moderation_log_router
 from app.database import init_db
-from app.docker_utils import start_cassandra_container, stop_cassandra_container
+from app.docker_utils import start_cassandra_container
 from fastapi.middleware.cors import CORSMiddleware
 
 

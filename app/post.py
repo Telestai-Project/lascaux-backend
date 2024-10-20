@@ -41,7 +41,7 @@ def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
         # Check if the total votes fall below the threshold
         if total_votes <= VOTE_THRESHOLD:
             # Remove the post
-            logger.info(f"Removing post ID: {post.id} due to low votes: {total_votes}")
+            logger.info("Removing post ID: %s due to low votes: %s", post.id, total_votes)
             post.delete()
             continue  # Skip adding this post to the response
 
@@ -58,7 +58,7 @@ def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
         post_responses.append(post_response)
 
         # Log the post ID and associated data
-        logger.info(f"Post ID: {post.id}, Title: {post.title}, Votes: {total_votes}")
+        logger.info("Post ID: %s, Title: %s, Votes: %s", post.id, post.title, total_votes )
 
     return post_responses
 

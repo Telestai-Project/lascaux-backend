@@ -7,7 +7,7 @@ vote_router = APIRouter()
 
 @vote_router.post("/", response_model=VoteResponse)
 def create_vote(vote: VoteCreate):
-    db_vote = Vote.create(**vote.dict())
+    db_vote = Vote.create(**vote.model_dump())
     return db_vote
 
 @vote_router.get("/{vote_id}", response_model=VoteResponse)
