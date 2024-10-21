@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.models import ModerationLog
-from app.schemas import ModerationLogCreate, ModerationLogResponse
+from app.db.models import ModerationLog
+from app.db.schemas import ModerationLogCreate, ModerationLogResponse
 from uuid import uuid4
 
 moderation_log_router = APIRouter()

@@ -26,7 +26,7 @@ class UserResponse(BaseModel):
     token_type: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Post Schemas
 class PostBase(BaseModel):
@@ -52,7 +52,7 @@ class PostResponse(PostBase):
     votes: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Vote Schemas
 class VoteBase(BaseModel):
@@ -67,7 +67,7 @@ class VoteResponse(VoteBase):
     id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Comment Schemas
 class CommentBase(BaseModel):
@@ -83,7 +83,7 @@ class CommentResponse(CommentBase):
     id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Moderation Schemas
 class ModerationLogBase(BaseModel):
@@ -99,8 +99,22 @@ class ModerationLogResponse(ModerationLogBase):
     id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Authentication
 class TokenData(BaseModel):
     wallet_address: str
+
+# TLSAmount Schemas
+class TLSAmountBase(BaseModel):
+    tls_amount: int
+    
+class TLSAmountCreate(TLSAmountBase):
+    pass # No additional fields needed for creation
+
+class TLSAmountResponse(TLSAmountBase):
+    id: UUID
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

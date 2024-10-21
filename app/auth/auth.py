@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, HTTPException
 from datetime import timedelta, datetime
-from app.models import User
-from app.schemas import UserCreate, UserResponse
+from app.db.models import User
+from app.db.schemas import UserCreate, UserResponse
 from fastapi.encoders import jsonable_encoder
 import os
 from dotenv import load_dotenv

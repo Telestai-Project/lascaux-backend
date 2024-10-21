@@ -1,8 +1,8 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
-from app.database import init_db
-from app.docker_utils import start_cassandra_container, stop_cassandra_container
+from app.db.database import init_db
+from app.docker.docker_utils import start_cassandra_container, stop_cassandra_container
 from uuid import uuid4
 import random
 import string

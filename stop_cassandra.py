@@ -1,4 +1,4 @@
-from app.docker_utils import stop_cassandra_container
+from app.docker.docker_utils import stop_cassandra_container
 
 def stop_cassandra():
     print("Stopping Cassandra Container...")

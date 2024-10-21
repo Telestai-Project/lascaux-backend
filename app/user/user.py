@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.models import User
-from app.schemas import  UserResponse
+from app.db.models import User
+from app.db.schemas import  UserResponse
 from uuid import UUID
 
 

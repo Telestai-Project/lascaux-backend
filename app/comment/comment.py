@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.models import Comment
-from app.schemas import CommentCreate, CommentResponse
+from app.db.models import Comment
+from app.db.schemas import CommentCreate, CommentResponse
 from uuid import uuid4
 
 comment_router = APIRouter()

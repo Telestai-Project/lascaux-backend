@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.models import Vote
-from app.schemas import VoteCreate, VoteResponse
+from app.db.models import Vote
+from app.db.schemas import VoteCreate, VoteResponse
 from uuid import UUID
 
 vote_router = APIRouter()

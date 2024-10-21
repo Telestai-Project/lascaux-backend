@@ -1,7 +1,7 @@
 from cassandra.cluster import Cluster
 from cassandra.cqlengine import connection
 from cassandra.cqlengine.management import sync_table
-from app.models import User, Post, Vote, Comment, ModerationLog
+from app.db.models import User, Post, Vote, Comment, ModerationLog, TLSAmount
 
 def init_db():
     # Connect to the Cassandra cluster
@@ -23,6 +23,7 @@ def init_db():
     sync_table(Vote)
     sync_table(Comment)
     sync_table(ModerationLog)
+    sync_table(TLSAmount)
 
     # Shutdown the session and cluster
     session.shutdown()

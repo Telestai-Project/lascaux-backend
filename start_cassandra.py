@@ -1,4 +1,4 @@
-from app.docker_utils import start_cassandra_container
+from app.docker.docker_utils import start_cassandra_container
 
 def start_cassandra():
     print("Starting Cassandra container...")

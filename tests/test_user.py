@@ -1,6 +1,6 @@
 import pytest
-from app.database import init_db
-from app.docker_utils import start_cassandra_container, stop_cassandra_container
+from app.db.database import init_db
+from app.docker.docker_utils import start_cassandra_container, stop_cassandra_container
 import uuid
 
 @pytest.fixture(scope="session", autouse=True)

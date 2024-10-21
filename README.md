@@ -79,5 +79,24 @@ Lascaux is a decentralized, text-based social media platform designed to empower
 - Pytest
 - HTTPX
 
+## .env
+1. Copy env vars from .env.example into .env
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Follow the instructions in the .env or .env.example file to get your api key.
+   
+## OPTIONAL 
+Create a venv environment. 
+ ```bash
+   python -m venv venv # or python3 -m venv venv on mac os/linux
+ ```
+
+Activate venv
+   ```bash
+   .\venv\Scripts\activate # or source venv/bin/activate on mac os/linux
+   ```
+
 ## Contributing
 Lascaux is open-source, and we welcome contributions. Fork the repository, create a branch, and submit a pull request with your changes. For large changes, please open an issue first to discuss what you’d like to modify. **Contributions will be rewarded**.

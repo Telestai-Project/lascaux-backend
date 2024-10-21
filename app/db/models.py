@@ -1,11 +1,21 @@
+import os
 from cassandra.cqlengine import columns
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine import connection
 from uuid import uuid4  # Import uuid4
-from datetime import datetime
+from datetime import datetime, timezone
+from cassandra.policies import RoundRobinPolicy
+
+# Set environment variable for schema management
+os.environ['CQLENG_ALLOW_SCHEMA_MANAGEMENT'] = '1'
 
 # Connect to the Cassandra cluster
-connection.setup(['127.0.0.1'], "cassandra", protocol_version=3)
+connection.setup(
+    ['127.0.0.1'],
+    "cassandra",
+    protocol_version=3,
+    load_balancing_policy=RoundRobinPolicy()
+    )
 
 class User(Model):
     __keyspace__ = 'store'
@@ -53,3 +63,10 @@ class ModerationLog(Model):
     reason = columns.Text(required=True)
     flagged_by_ai = columns.Boolean(default=False)
     created_at = columns.DateTime()
+    
+# store the tls amount that is required to vote, post etc
+class TLSAmount(Model):
+    __keyspace__ = 'store'
+    id = columns.UUID(primary_key=True, default=uuid4)
+    tls_amount = columns.Integer(required=True)
+    updated_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))

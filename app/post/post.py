@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
-from app.models import Post, Vote  # Ensure Vote is imported
-from app.schemas import PostCreate, PostUpdate, PostResponse
+from app.db.models import Post, Vote  # Ensure Vote is imported
+from app.db.schemas import PostCreate, PostUpdate, PostResponse
 from uuid import uuid4
 from typing import List
 from datetime import datetime
