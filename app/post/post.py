@@ -1,10 +1,17 @@
+import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
 from fastapi import APIRouter, HTTPException, Query
-from app.db.models import Post, Vote  # Ensure Vote is imported
+from app.db.models import Post, Vote, User, TLSAmount  # Ensure Vote is imported
 from app.db.schemas import PostCreate, PostUpdate, PostResponse
 from uuid import uuid4
 from typing import List
 from datetime import datetime
 import logging
+
+from app.get_amount.get_amount import fetch_user_balance
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -64,6 +71,31 @@ def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
 
 @post_router.post("/", response_model=PostResponse)
 def create_post(post: PostCreate):
+    # Fetch user's wallet address from the User model
+    user = User.objects(wallet_address=post.user_id).first()  # Adjust based on your actual schema
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Fetch user's balance
+    balance = fetch_user_balance(user.wallet_address)
+    if balance is None:
+        raise HTTPException(status_code=500, detail="Failed to fetch user's wallet balance")
+
+    # Fetch the required minimum TLS amount from the database
+    required_tls_amount_entry = TLSAmount.objects().order_by('-updated_at').first()  # Get the latest value
+    if required_tls_amount_entry is None:
+        raise HTTPException(status_code=500, detail="Failed to fetch required TLS amount")
+
+    required_tls_amount = required_tls_amount_entry.tls_amount
+
+    # Check if the user's balance is less than the required amount
+    if balance < required_tls_amount:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Insufficient balance. You need at least {required_tls_amount} TLS to create a post."
+        )
+
+    # If balance is sufficient, proceed with creating the post
     new_post = Post(
         id=uuid4(),
         user_id=post.user_id,
@@ -86,6 +118,7 @@ def create_post(post: PostCreate):
         ipfs_hash=new_post.ipfs_hash,
         votes=0  # Default to 0 for a new post
     )
+
 
 @post_router.get("/{post_id}", response_model=PostResponse)
 def read_post(post_id: str):

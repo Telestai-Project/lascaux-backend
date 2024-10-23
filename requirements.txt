@@ -8,3 +8,5 @@ requests
 cassandra-driver
 python-dotenv
 PyJWT
+python-bitcoinrpc
+beautifulsoup4

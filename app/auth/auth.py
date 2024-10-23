@@ -1,4 +1,8 @@
 # app/api/auth.py
+import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from fastapi import APIRouter, HTTPException
 from datetime import timedelta, datetime
