@@ -72,7 +72,7 @@ def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
 @post_router.post("/", response_model=PostResponse)
 def create_post(post: PostCreate):
     # Fetch user's wallet address from the User model
-    user = User.objects(wallet_address=post.user_id).first()  # Adjust based on your actual schema
+    user = User.objects(wallet_address=post.user_id).first()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 

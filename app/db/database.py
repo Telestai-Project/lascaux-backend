@@ -29,7 +29,7 @@ def init_db():
     sync_table(Comment)
     sync_table(ModerationLog)
     sync_table(TLSAmount)
-
+    
     # Shutdown the session and cluster
     session.shutdown()
     cluster.shutdown()
