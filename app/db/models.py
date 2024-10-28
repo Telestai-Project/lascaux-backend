@@ -46,7 +46,7 @@ class Post(Model):
 class Vote(Model):
     __keyspace__ = 'store'
     id = columns.UUID(primary_key=True, default=uuid4)
-    post_id = columns.UUID(required=True)
+    post_id = columns.UUID(required=True, index=True)  # Add index=True
     user_id = columns.UUID(required=True)
     vote_value = columns.Integer(required=True)
     created_at = columns.DateTime()

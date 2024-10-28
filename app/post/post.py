@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from fastapi import APIRouter, HTTPException, Query
-from app.db.models import Post, Vote, User, TLSAmount  # Ensure Vote is imported
+from app.db.models import Post, Vote, User, TLSAmount
 from app.db.schemas import PostCreate, PostUpdate, PostResponse
 from uuid import uuid4
 from typing import List
@@ -121,11 +121,24 @@ def create_post(post: PostCreate):
 
 
 @post_router.get("/{post_id}", response_model=PostResponse)
-def read_post(post_id: str):
-    db_post = Post.objects(id=post_id).first()
+def read_post(post_id: str, user_id: str = Query(...), created_at: datetime = Query(...)):
+    db_post = Post.objects(id=post_id, user_id=user_id, created_at=created_at).first()
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
-    return db_post
+    
+    # Calculate total votes for the post
+    total_votes = sum(vote.vote_value for vote in Vote.objects(post_id=post_id))
+
+    return PostResponse(
+        id=db_post.id,
+        user_id=db_post.user_id,
+        title=db_post.title,
+        content=db_post.content,
+        created_at=db_post.created_at,
+        is_flagged=db_post.is_flagged,
+        ipfs_hash=db_post.ipfs_hash,
+        votes=total_votes
+    )
 
 @post_router.put("/{post_id}", response_model=PostResponse)
 def update_post(post_id: str, post: PostUpdate):
