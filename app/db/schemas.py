@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
+from typing import List
 
 # User Schemas
 class UserBase(BaseModel):
@@ -29,6 +30,7 @@ class UserResponse(BaseModel):
     last_login: Optional[datetime] = None  # Make last_login optional
     access_token: str
     token_type: str
+    tags: Optional[List[str]] = [] #tags like admin etc
 
     class Config:
         from_attributes = True
@@ -126,3 +128,18 @@ class TLSAmountResponse(TLSAmountBase):
     class Config:
         from_attributes = True
         
+class NewsBase(BaseModel):
+    title: str
+    content: str
+
+class NewsCreate(NewsBase):
+    admin_id: UUID  # Only permitted admins can post
+
+class NewsResponse(BaseModel):
+    id: UUID
+    admin_id: UUID
+    title: str
+    content: str
+    created_at: datetime
+
+    model_config = {'from_attributes': True}

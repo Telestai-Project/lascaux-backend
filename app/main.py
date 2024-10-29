@@ -11,8 +11,9 @@ from app.vote.vote import vote_router
 from app.comment.comment import comment_router
 from app.moderation.moderation_log import moderation_log_router
 from app.db.database import init_db
-from app.docker.docker_utils import start_cassandra_container
+from app.docker.docker_utils import start_cassandra_container, stop_cassandra_container
 from fastapi.middleware.cors import CORSMiddleware
+from app.news.news import news_router
 
 
 app = FastAPI()
@@ -43,11 +44,12 @@ app.include_router(vote_router, prefix="/votes")
 app.include_router(comment_router, prefix="/comments")
 app.include_router(moderation_log_router, prefix="/moderation_logs")
 app.include_router(ipfs_router, prefix="/ipfs")
+app.include_router(news_router, prefix="/news", tags=["news"])
 
 @app.get("/healthcheck")
 async def healthcheck():
     return {"status": "ok"}
 
 # Ensure Cassandra is stopped when the application exits
-# import atexit
-# atexit.register(stop_cassandra_container)
+import atexit
+atexit.register(stop_cassandra_container)

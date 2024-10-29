@@ -29,8 +29,9 @@ class User(Model):
     display_name = columns.Text(required=True, index=True)  # Add index for uniqueness
     bio = columns.Text()
     profile_photo_url = columns.Text()
-    created_at = columns.DateTime(default=datetime.utcnow)
+    created_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))
     last_login = columns.DateTime()
+    tags = columns.List(columns.Text) #stores roles
 
 class Post(Model):
     __keyspace__ = 'store'
@@ -79,4 +80,11 @@ class TLSAmount(Model):
     tls_amount = columns.Integer(required=True)
     updated_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))
 
-    
+class News(Model):
+    __keyspace__ = 'store'
+    id = columns.UUID(primary_key=True, default=uuid4)
+    admin_id = columns.UUID(required=True)  # Only permitted admins can post
+    title = columns.Text(required=True)
+    content = columns.Text(required=True)
+    created_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))
+

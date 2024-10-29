@@ -7,6 +7,12 @@ import pytest
 from app.db.database import init_db
 from app.docker.docker_utils import start_cassandra_container, stop_cassandra_container
 import uuid
+from app.db.models import User
+from uuid import uuid4
+from datetime import timezone, datetime
+from httpx import AsyncClient
+from app.main import app
+
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_cassandra():
@@ -51,3 +57,62 @@ def generate_unique_wallet_address():
 #         response = await ac.get(f"/users/{user_id}")
 #     assert response.status_code == 200
 #     assert response.json()["display_name"] == unique_display_name
+
+@pytest.fixture(scope="function")
+def setup_admin_users():
+    # Create admin users in the database for testing
+    admin_user_1 = User.create(
+        id=uuid4(),
+        wallet_address="TcsCu4yjc2GFZCXPVkxQ6E54MWCHkdT9z2", # zach's addy for testing 
+        display_name="admin_user_1",
+        bio="Admin User 1 Bio",
+        profile_photo_url="/lascaux-backend/img/coolguy.jpg",
+        created_at=datetime.now(timezone.utc),
+        tags=["admin"]
+    )
+    admin_user_2 = User.create(
+        id=uuid4(),
+        wallet_address="TvdqDw3ZzLrYwr3qukMj86rf3dtMQwL5PU", #SassyFrass's addy for testing
+        display_name="admin_user_2",
+        bio="Admin User 2 Bio",
+        profile_photo_url="/lascaux-backend/img/angrycat.jpg",
+        created_at=datetime.now(timezone.utc),
+        tags=["admin"]
+    )
+
+    yield [admin_user_1, admin_user_2]
+
+    # Clean up after test
+    admin_user_1.delete()
+    admin_user_2.delete()
+
+@pytest.fixture(scope="function")
+def setup_admin_users():
+    # Clean up any previous admin users
+    User.objects.filter(tags__contains=["admin"]).delete()
+
+    # Create valid admin users for testing
+    admin_user_1 = User.create(
+        id=uuid4(),
+        wallet_address="TcsCu4yjc2GFZCXPVkxQ6E54MWCHkdT9z2",  # Example valid address
+        display_name="admin_user_1",
+        bio="Admin User 1 Bio",
+        profile_photo_url="/lascaux-backend/img/coolguy.jpg",
+        created_at=datetime.now(timezone.utc),
+        tags=["admin"]
+    )
+    admin_user_2 = User.create(
+        id=uuid4(),
+        wallet_address="TvdqDw3ZzLrYwr3qukMj86rf3dtMQwL5PU",  # Another example address
+        display_name="admin_user_2",
+        bio="Admin User 2 Bio",
+        profile_photo_url="/lascaux-backend/img/angrycat.jpg",
+        created_at=datetime.now(timezone.utc),
+        tags=["admin"]
+    )
+
+    yield [admin_user_1, admin_user_2]
+
+    # Clean up after test
+    admin_user_1.delete()
+    admin_user_2.delete()

@@ -70,6 +70,13 @@ Lascaux is a decentralized, text-based social media platform designed to empower
 - **`GET /healthcheck`**: Checks if the node is running.
 - **`GET /nodes/available`**: Lists all currently available nodes.
 
+##  News Management
+- **POST /news/** : Creates a news article (admin-only).
+- **GET /news/** : Retrieves all news.
+
+## User Role Management
+- **GET /users/admins** : Retrieves the list of all admins.
+  
 ## Requirements
 
 - Python 3.8+

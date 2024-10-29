@@ -10,3 +10,4 @@ python-dotenv
 PyJWT
 python-bitcoinrpc
 beautifulsoup4
+python-jose
