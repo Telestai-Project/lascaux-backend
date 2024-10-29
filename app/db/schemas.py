@@ -54,7 +54,9 @@ class PostResponse(PostBase):
     user_id: UUID
     title: str
     created_at: datetime
-    votes: int
+    votes: int  # Net votes (upvotes - downvotes)
+    upvotes: int = 0  
+    downvotes: int = 0  
 
     class Config:
         from_attributes = True
@@ -123,3 +125,4 @@ class TLSAmountResponse(TLSAmountBase):
 
     class Config:
         from_attributes = True
+        

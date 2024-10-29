@@ -42,13 +42,16 @@ class Post(Model):
     updated_at = columns.DateTime()
     is_flagged = columns.Boolean(default=False)
     ipfs_hash = columns.Text()
+    upvotes = columns.Integer(default=0) 
+    downvotes = columns.Integer(default=0)  
+
 
 class Vote(Model):
     __keyspace__ = 'store'
     id = columns.UUID(primary_key=True, default=uuid4)
-    post_id = columns.UUID(required=True, index=True)  # Add index=True
+    post_id = columns.UUID(required=True, index=True)
     user_id = columns.UUID(required=True)
-    vote_value = columns.Integer(required=True)
+    vote_type = columns.Text(required=True)  # Can be "upvote" or "downvote"
     created_at = columns.DateTime()
 
 class Comment(Model):
@@ -75,3 +78,5 @@ class TLSAmount(Model):
     id = columns.UUID(primary_key=True, default=uuid4)
     tls_amount = columns.Integer(required=True)
     updated_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))
+
+    
