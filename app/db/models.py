@@ -34,7 +34,7 @@ class User(Model):
 
 class Post(Model):
     __keyspace__ = 'store'
-    id = columns.UUID(primary_key=True, default=uuid4)
+    id = columns.UUID(primary_key=True, default=uuid4, index=True)
     user_id = columns.UUID(primary_key=True, partition_key=True)
     created_at = columns.DateTime(primary_key=True, clustering_order="DESC")
     title = columns.Text(required=False)

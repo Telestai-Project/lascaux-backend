@@ -121,13 +121,14 @@ def create_post(post: PostCreate):
 
 
 @post_router.get("/{post_id}", response_model=PostResponse)
-def read_post(post_id: str, user_id: str = Query(...), created_at: datetime = Query(...)):
-    db_post = Post.objects(id=post_id, user_id=user_id, created_at=created_at).first()
+def read_post(post_id: str):
+    # Fetch the post directly by its UUID using the index
+    db_post = Post.objects.filter(id=post_id).first()
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
-    
+
     # Calculate total votes for the post
-    total_votes = sum(vote.vote_value for vote in Vote.objects(post_id=post_id))
+    total_votes = sum(vote.vote_value for vote in Vote.objects.filter(post_id=post_id))
 
     return PostResponse(
         id=db_post.id,
@@ -139,6 +140,7 @@ def read_post(post_id: str, user_id: str = Query(...), created_at: datetime = Qu
         ipfs_hash=db_post.ipfs_hash,
         votes=total_votes
     )
+
 
 @post_router.put("/{post_id}", response_model=PostResponse)
 def update_post(post_id: str, post: PostUpdate):
