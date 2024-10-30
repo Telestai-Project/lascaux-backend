@@ -86,13 +86,15 @@ async def test_get_admin_users(setup_admin_users):
 
 @pytest.fixture(scope="function")
 def setup_admin_users():
-    # Clean up any previous admin users
-    User.objects.filter(tags__contains=["admin"]).delete()
+    # Retrieve all users with the "admin" tag for cleanup
+    admin_users = User.objects.filter(tags__contains=["admin"]).all()
+    for admin_user in admin_users:
+        admin_user.delete()
 
     # Create valid admin users for testing
     admin_user_1 = User.create(
         id=uuid4(),
-        wallet_address="TcsCu4yjc2GFZCXPVkxQ6E54MWCHkdT9z2",  # Example valid address
+        wallet_address="TcsCu4yjc2GFZCXPVkxQ6E54MWCHkdT9z2",  # random wallet addy for testing
         display_name="admin_user_1",
         bio="Admin User 1 Bio",
         profile_photo_url="/lascaux-backend/img/coolguy.jpg",
@@ -101,7 +103,7 @@ def setup_admin_users():
     )
     admin_user_2 = User.create(
         id=uuid4(),
-        wallet_address="TvdqDw3ZzLrYwr3qukMj86rf3dtMQwL5PU",  # Another example address
+        wallet_address="TvdqDw3ZzLrYwr3qukMj86rf3dtMQwL5PU",  # random wallet addy for testing
         display_name="admin_user_2",
         bio="Admin User 2 Bio",
         profile_photo_url="/lascaux-backend/img/angrycat.jpg",
@@ -111,8 +113,9 @@ def setup_admin_users():
 
     yield [admin_user_1, admin_user_2]
 
-    # Clean up after test
+    # Clean up after the test by deleting the specific users created
     admin_user_1.delete()
     admin_user_2.delete()
+
     
 
