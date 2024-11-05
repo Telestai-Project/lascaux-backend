@@ -29,11 +29,12 @@ class UserResponse(BaseModel):
     created_at: datetime
     last_login: Optional[datetime] = None  # Make last_login optional
     access_token: str
+    refresh_token: Optional[str] = None 
     token_type: str
     tags: Optional[List[str]] = [] #tags like admin etc
 
     class Config:
-        from_attributes = True
+        model_config = {'from_attributes': True}
 
 # Post Schemas
 class PostBase(BaseModel):
@@ -143,3 +144,24 @@ class NewsResponse(BaseModel):
     created_at: datetime
 
     model_config = {'from_attributes': True}
+    
+class Token(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+class TokenRefresh(BaseModel):
+    refresh_token: str
+
+class LogoutRequest(BaseModel):
+    refresh_token: str
+
+class RefreshTokenResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    token: str
+    expires_at: datetime
+    created_at: datetime
+
+    class Config:
+        model_config = {'from_attributes': True}

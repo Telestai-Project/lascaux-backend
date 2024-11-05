@@ -14,6 +14,7 @@ from app.db.database import init_db
 from app.docker.docker_utils import start_cassandra_container, stop_cassandra_container
 from fastapi.middleware.cors import CORSMiddleware
 from app.news.news import news_router
+from app.middleware.middleware import AuthMiddleware
 
 
 app = FastAPI()
@@ -26,6 +27,9 @@ app.add_middleware(
     allow_methods=["*"],  # Allow all HTTP methods
     allow_headers=["*"],  # Allow all headers
 )
+
+# Add Authentication Middleware
+app.add_middleware(AuthMiddleware)
 
 # Start the Cassandra container
 start_cassandra_container()

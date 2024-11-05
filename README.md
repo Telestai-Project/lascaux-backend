@@ -41,6 +41,7 @@ Lascaux is a decentralized, text-based social media platform designed to empower
 - **`POST /auth/register`**: Registers a new user with their Telestai wallet.
 - **`POST /auth/verify`**: Verifies a signed message for sensitive actions.
 - **`POST /auth/refresh`**: Refreshes the session token.
+- **`POST /auth/logout`**: Logs out a user by invalidating their refresh token.
 
 ### Profile Management
 - **`GET /profile/{wallet_address}`**: Fetches a user's profile details.
@@ -76,6 +77,7 @@ Lascaux is a decentralized, text-based social media platform designed to empower
 
 ## User Role Management
 - **GET /users/admins** : Retrieves the list of all admins.
+- **POST /users/admins** : Promotes a user to an admin role.
   
 ## Requirements
 

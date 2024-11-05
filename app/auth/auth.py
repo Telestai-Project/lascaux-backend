@@ -1,17 +1,15 @@
-# app/api/auth.py
 import os
 import sys
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Request
 from datetime import timedelta, datetime, timezone
-from app.db.models import User
-from app.db.schemas import UserCreate, UserResponse
-from fastapi.encoders import jsonable_encoder
+from app.db.models import User, RefreshToken
+from app.db.schemas import UserCreate, Token, TokenRefresh, LogoutRequest
 from dotenv import load_dotenv
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer
+from uuid import UUID
 
 # Load environment variables from .env file
 load_dotenv()
@@ -21,11 +19,20 @@ auth_router = APIRouter()
 SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="signin")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/signin")
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
+    user = User.objects(wallet_address=data["sub"]).first()
+    if user:
+        to_encode.update({
+            "username": user.display_name,
+            "avatar": user.profile_photo_url,
+            "wallet_address": user.wallet_address,
+            "tags": user.tags
+        })
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -34,7 +41,24 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-@auth_router.post("/signup", response_model=UserResponse)
+def create_refresh_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def save_refresh_token(user_id: UUID, token: str, expires_at: datetime):
+    RefreshToken.create(
+        user_id=user_id,
+        token=token,
+        expires_at=expires_at
+    )
+
+@auth_router.post("/signup", response_model=Token)
 async def signup(user: UserCreate):
     # Check if the wallet address already exists
     existing_user_by_wallet = User.objects(wallet_address=user.wallet_address).first()
@@ -52,67 +76,136 @@ async def signup(user: UserCreate):
         display_name=user.display_name,
         bio=user.bio,
         profile_photo_url=user.profile_photo_url,
-        created_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc)
     )
 
+    # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": db_user.wallet_address}, expires_delta=access_token_expires
     )
     
-    user_data = jsonable_encoder(db_user)
+    # Create refresh token
+    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    refresh_token_signup = create_refresh_token(
+        data={"sub": db_user.wallet_address}, expires_delta=refresh_token_expires
+    )
+    
+    # Save refresh token to DB
+    save_refresh_token(
+        user_id=db_user.id,
+        token=refresh_token_signup,
+        expires_at=datetime.now(timezone.utc) + refresh_token_expires
+    )
+    
     return {
-        "id": user_data["id"],
-        "wallet_address": user_data["wallet_address"],
-        "display_name": user_data["display_name"],
-        "bio": user_data.get("bio"),
-        "profile_photo_url": user_data.get("profile_photo_url"),
-        "created_at": user_data["created_at"],
-        "last_login": user_data.get("last_login"),
         "access_token": access_token,
+        "refresh_token": refresh_token_signup,
         "token_type": "bearer"
     }
 
-@auth_router.post("/signin")
+@auth_router.post("/signin", response_model=Token)
 async def signin(payload: dict):
-    wallet_address = payload.get("wallet_address")  # Ensure this matches the frontend payload key
+    # Ensure this matches the frontend payload key
+    wallet_address = payload.get("wallet_address")  
     
     # Check if the user exists
     db_user = User.objects(wallet_address=wallet_address).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Issue a JWT
+    # Update last_login
+    db_user.update(last_login=datetime.now(timezone.utc))
+    
+    # Create access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": db_user.wallet_address}, expires_delta=access_token_expires
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Create refresh token
+    refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    refresh_token_signin = create_refresh_token(
+        data={"sub": db_user.wallet_address}, expires_delta=refresh_token_expires
+    )
+    
+    # Save refresh token to DB
+    save_refresh_token(
+        user_id=db_user.id,
+        token=refresh_token_signin,
+        expires_at=datetime.now(timezone.utc) + refresh_token_expires
+    )
+    
+    return {
+            "access_token": access_token,
+             "refresh_token": refresh_token_signin, 
+             "token_type": "bearer"
+    }
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+@auth_router.post("/token/refresh", response_model=Token)
+async def refresh_token(token_refresh: TokenRefresh):
     try:
-        # Decode the token and extract the wallet address
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # Decode the refresh token
+        payload = jwt.decode(token_refresh.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
         wallet_address: str = payload.get("sub")
         if wallet_address is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        # Fetch the user from the database
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        
+        # Fetch user
         user = User.objects(wallet_address=wallet_address).first()
         if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        return user
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        
+        # Check if the refresh token exists and is not expired
+        stored_refresh_token = RefreshToken.objects.filter(user_id=user.id, token=token_refresh.refresh_token).first()
+        if stored_refresh_token is None or stored_refresh_token.expires_at < datetime.now(timezone.utc):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
+        
+        # Create new access token
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        new_access_token = create_access_token(
+            data={"sub": user.wallet_address}, expires_delta=access_token_expires
+        )
+        
+        # Issue a new refresh token
+        new_refresh_token = create_refresh_token(
+            data={"sub": user.wallet_address}, expires_delta=timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        )
+        
+        # Save the new refresh token and delete the old one
+        stored_refresh_token.delete()
+        save_refresh_token(
+            user_id=user.id,
+            token=new_refresh_token,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        )
+        
+        return {
+            "access_token": new_access_token,
+            "refresh_token": new_refresh_token,
+            "token_type": "bearer"
+        }
+    
     except JWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Invalid refresh token"
         ) from exc
+
+
+@auth_router.post("/logout")
+async def logout(logout_request: LogoutRequest, request: Request):
+    # Logs out a user by deleting the provided refresh token from the database.
+    # Accessing the user from middleware
+    user: User = request.state.user  
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    # Delete the provided refresh token from the database
+    deleted = RefreshToken.objects.filter(user_id=user.id, token=logout_request.refresh_token).delete()
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Refresh token not found")
+    return {"msg": "Successfully logged out"}
+
+

@@ -1,13 +1,11 @@
 import os
 import sys
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-
 
 from cassandra.cqlengine import columns
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine import connection
-from uuid import uuid4  # Import uuid4
+from uuid import uuid4
 from datetime import datetime, timezone
 from cassandra.policies import RoundRobinPolicy
 
@@ -20,18 +18,26 @@ connection.setup(
     "cassandra",
     protocol_version=3,
     load_balancing_policy=RoundRobinPolicy()
-    )
+)
 
 class User(Model):
     __keyspace__ = 'store'
     id = columns.UUID(primary_key=True, default=uuid4)
-    wallet_address = columns.Text(required=True, index=True)  # Add index for uniqueness
-    display_name = columns.Text(required=True, index=True)  # Add index for uniqueness
+    wallet_address = columns.Text(required=True, index=True)
+    display_name = columns.Text(required=True, index=True)
     bio = columns.Text()
     profile_photo_url = columns.Text()
     created_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))
     last_login = columns.DateTime()
-    tags = columns.List(columns.Text) #stores roles
+    tags = columns.List(columns.Text)  # stores roles
+
+class RefreshToken(Model):
+    __keyspace__ = 'store'
+    id = columns.UUID(primary_key=True, default=uuid4)
+    user_id = columns.UUID(required=True, index=True)
+    token = columns.Text(required=True)
+    expires_at = columns.DateTime(required=True)
+    created_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))
 
 class Post(Model):
     __keyspace__ = 'store'
@@ -43,9 +49,8 @@ class Post(Model):
     updated_at = columns.DateTime()
     is_flagged = columns.Boolean(default=False)
     ipfs_hash = columns.Text()
-    upvotes = columns.Integer(default=0) 
-    downvotes = columns.Integer(default=0)  
-
+    upvotes = columns.Integer(default=0)
+    downvotes = columns.Integer(default=0)
 
 class Vote(Model):
     __keyspace__ = 'store'
@@ -72,8 +77,7 @@ class ModerationLog(Model):
     reason = columns.Text(required=True)
     flagged_by_ai = columns.Boolean(default=False)
     created_at = columns.DateTime()
-    
-# store the tls amount that is required to vote, post etc
+
 class TLSAmount(Model):
     __keyspace__ = 'store'
     id = columns.UUID(primary_key=True, default=uuid4)
@@ -83,8 +87,8 @@ class TLSAmount(Model):
 class News(Model):
     __keyspace__ = 'store'
     id = columns.UUID(primary_key=True, default=uuid4)
-    admin_id = columns.UUID(required=True)  # Only permitted admins can post
+    # Only permitted admins can post
+    admin_id = columns.UUID(required=True)  
     title = columns.Text(required=True)
     content = columns.Text(required=True)
     created_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))
-
