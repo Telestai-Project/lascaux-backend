@@ -60,6 +60,7 @@ def save_refresh_token(user_id: UUID, token: str, expires_at: datetime):
 
 @auth_router.post("/signup", response_model=Token)
 async def signup(user: UserCreate):
+    print("user =>" ,user)
     # Check if the wallet address already exists
     existing_user_by_wallet = User.objects(wallet_address=user.wallet_address).first()
     if existing_user_by_wallet:
