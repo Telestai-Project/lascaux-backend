@@ -78,6 +78,7 @@ Lascaux is a decentralized, text-based social media platform designed to empower
 ## User Role Management
 - **GET /users/admins** : Retrieves the list of all admins.
 - **POST /users/admins** : Promotes a user to an admin role.
+- **POST /roles/create** :  Allows an admin to create new roles.
   
 ## Requirements
 

@@ -31,7 +31,9 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
             "username": user.display_name,
             "avatar": user.profile_photo_url,
             "wallet_address": user.wallet_address,
-            "tags": user.tags
+            "tags": user.tags,
+            "role": user.tags[0] if user.tags else "general",
+            "role_description": "General role is the default role given to every user. You'll be promoted based on your activity and contributions to the platform."
         })
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -40,6 +42,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 def create_refresh_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
@@ -256,3 +259,24 @@ async def logout(logout_request: LogoutRequest, request: Request):
     if not deleted:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Refresh token not found")
     return {"msg": "Successfully logged out"}
+
+
+@auth_router.post("/roles/create")
+async def create_role(role_name: str, request: Request):
+    # Accessing the user from middleware
+    user: User = request.state.user  
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    # Only admins can create roles
+    if "admin" not in user.tags:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to create roles")
+
+    # Create a new role by adding it to the user's tags
+    if role_name in user.tags:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role already exists")
+
+    user.update(push__tags=role_name)
+
+    return {"msg": f"Role '{role_name}' created successfully"}
