@@ -98,7 +98,7 @@ class Label(Model):
     __table_name__ = 'store'
     
     id = columns.UUID(primary_key=True, default=uuid.uuid4)
-    name = columns.Text(required=True, unique=True)
+    name = columns.Text(required=True)
     description = columns.Text()
     created_at = columns.DateTime(required=True, default=datetime.now(timezone.utc))
     

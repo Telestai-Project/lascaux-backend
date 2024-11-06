@@ -77,6 +77,7 @@ def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
 
     return post_responses
 
+
 @post_router.post("/", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
 def create_post(post: PostCreate):
     # Fetch user by ID
@@ -127,9 +128,14 @@ def create_post(post: PostCreate):
         label = Label.objects(id=label_id).first()
         if not label:
             raise HTTPException(status_code=404, detail=f"Label with id {label_id} not found")
+        
+        # Prevent duplicate associations
+        existing_label_post = LabelPost.objects(tag_id=label.id, post_id=new_post.id).first()
+        if existing_label_post:
+            continue
+
         LabelPost.create(tag_id=label.id, post_id=new_post.id)
         labels.append(LabelResponse.model_validate(label))
-
 
     # Include votes in the response, defaulting to 0
     return PostResponse(
@@ -145,6 +151,7 @@ def create_post(post: PostCreate):
         downvotes=0,
         labels=labels
     )
+
 
 @post_router.get("/{post_id}", response_model=PostResponse)
 def read_post(post_id: UUID):

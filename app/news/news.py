@@ -40,6 +40,12 @@ async def create_news(news: NewsCreate, request: Request):
             label = Label.objects(id=label_id).first()
             if not label:
                 raise HTTPException(status_code=404, detail=f"Label with id {label_id} not found")
+            
+            # Prevent duplicate associations
+            existing_label_news = LabelNews.objects(tag_id=label.id, news_id=new_news.id).first()
+            if existing_label_news:
+                continue
+            
             LabelNews.create(tag_id=label.id, news_id=new_news.id)
             labels.append(LabelResponse.model_validate(label))
 
@@ -68,7 +74,8 @@ def get_all_news(request: Request):
         for news in news_list:
             # Fetch labels associated with the news
             label_news = LabelNews.objects(news_id=news.id).all()
-            labels = [Label.objects(id=ln.tag_id).first() for ln in label_news]
+            label_ids = [ln.tag_id for ln in label_news]
+            labels = Label.objects.filter(id__in=label_ids).all()
             labels = [LabelResponse.model_validate(label) for label in labels if label]
 
             news_response = NewsResponse(
@@ -93,7 +100,8 @@ def get_news_item(news_id: UUID):
     
     # Fetch labels associated with the news
     label_news = LabelNews.objects(news_id=news_id).all()
-    labels = [Label.objects(id=ln.tag_id).first() for ln in label_news]
+    label_ids = [ln.tag_id for ln in label_news]
+    labels = Label.objects.filter(id__in=label_ids).all()
     labels = [LabelResponse.model_validate(label) for label in labels if label]
 
     return NewsResponse(
@@ -106,7 +114,7 @@ def get_news_item(news_id: UUID):
     )
 
 @news_router.put("/{news_id}", response_model=NewsResponse)
-def update_news(news_id: UUID, news_update: NewsCreate):  # Assuming similar update schema
+def update_news(news_id: UUID, news_update: NewsCreate):
     news = News.objects(id=news_id).first()
     if not news:
         raise HTTPException(status_code=404, detail="News item not found")
@@ -129,11 +137,18 @@ def update_news(news_id: UUID, news_update: NewsCreate):  # Assuming similar upd
             label = Label.objects(id=label_id).first()
             if not label:
                 raise HTTPException(status_code=404, detail=f"Label with id {label_id} not found")
+            
+            # Prevent duplicate associations
+            existing_label_news = LabelNews.objects(tag_id=label.id, news_id=news.id).first()
+            if existing_label_news:
+                continue
+            
             LabelNews.create(tag_id=label.id, news_id=news.id)
 
     # Fetch updated labels
     label_news = LabelNews.objects(news_id=news_id).all()
-    labels = [Label.objects(id=ln.tag_id).first() for ln in label_news]
+    label_ids = [ln.tag_id for ln in label_news]
+    labels = Label.objects.filter(id__in=label_ids).all()
     labels = [LabelResponse.model_validate(label) for label in labels if label]
 
     return NewsResponse(
