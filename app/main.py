@@ -15,6 +15,7 @@ from app.docker.docker_utils import start_cassandra_container, stop_cassandra_co
 from fastapi.middleware.cors import CORSMiddleware
 from app.news.news import news_router
 from app.middleware.middleware import AuthMiddleware
+from app.labels.labels import label_router
 
 
 app = FastAPI()
@@ -48,7 +49,8 @@ app.include_router(vote_router, prefix="/votes")
 app.include_router(comment_router, prefix="/comments")
 app.include_router(moderation_log_router, prefix="/moderation_logs")
 app.include_router(ipfs_router, prefix="/ipfs")
-app.include_router(news_router, prefix="/news", tags=["news"])
+app.include_router(news_router) 
+app.include_router(label_router)
 
 @app.get("/healthcheck")
 async def healthcheck():

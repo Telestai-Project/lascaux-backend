@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -42,15 +42,35 @@ class PostBase(BaseModel):
     is_flagged: Optional[bool] = False
     ipfs_hash: Optional[str] = None
 
+
 class PostCreate(BaseModel):
     user_id: str
     title: str
     content: str
+    label_ids: Optional[List[UUID]] = Field(
+        default_factory=list,
+        example=["label-uuid-1", "label-uuid-2"]
+    ) 
+
 
 class PostUpdate(BaseModel):
     content: Optional[str] = None
     is_flagged: Optional[bool] = None
     ipfs_hash: Optional[str] = None
+    label_ids: Optional[List[UUID]] = Field(
+        default_factory=list,
+        example=["label-uuid-1", "label-uuid-2"]
+    )
+    
+    
+class LabelResponse(BaseModel):
+    id: UUID
+    name: str
+    description: Optional[str]
+    created_at: datetime
+
+    class Config:
+        model_config = {'from_attributes': True}
 
 class PostResponse(PostBase):
     id: UUID
@@ -60,9 +80,10 @@ class PostResponse(PostBase):
     votes: int  # Net votes (upvotes - downvotes)
     upvotes: int = 0  
     downvotes: int = 0  
+    labels: List[LabelResponse] = []  # New field for labels
 
     class Config:
-        from_attributes = True
+        model_config = {'from_attributes': True}
 
 # Vote Schemas
 class VoteBase(BaseModel):
@@ -127,23 +148,40 @@ class TLSAmountResponse(TLSAmountBase):
     updated_at: datetime
 
     class Config:
-        from_attributes = True
+        model_config = {'from_attributes': True}
         
 class NewsBase(BaseModel):
     title: str
     content: str
 
-class NewsCreate(NewsBase):
-    admin_id: UUID  # Only permitted admins can post
+class NewsCreate(BaseModel):
+    admin_id: UUID  # Ensure it's UUID, not str
+    title: str
+    content: str
+    label_ids: Optional[List[UUID]] = Field(
+        default_factory=list,
+        example=["label-uuid-1", "label-uuid-2"]
+    )
 
+    
+class NewsUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    label_ids: Optional[List[UUID]] = Field(
+        default_factory=list,
+        example=["label-uuid-1", "label-uuid-2"]
+    )
+    
 class NewsResponse(BaseModel):
     id: UUID
     admin_id: UUID
     title: str
     content: str
     created_at: datetime
+    labels: List[LabelResponse] = []  # New field for labels
 
-    model_config = {'from_attributes': True}
+    class Config:
+        model_config = {'from_attributes': True}
     
 class Token(BaseModel):
     access_token: str
@@ -165,3 +203,14 @@ class RefreshTokenResponse(BaseModel):
 
     class Config:
         model_config = {'from_attributes': True}
+        
+class LabelCreate(BaseModel):
+    name: str = Field(..., example="tech")
+    description: Optional[str] = Field(None, example="Technology related news and articles.")
+    
+        
+class LabelUpdate(BaseModel):
+    name: Optional[str] = Field(None, example="technology")
+    description: Optional[str] = Field(None, example="All things tech-related.")
+    
+

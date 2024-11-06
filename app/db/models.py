@@ -8,6 +8,7 @@ from cassandra.cqlengine import connection
 from uuid import uuid4
 from datetime import datetime, timezone
 from cassandra.policies import RoundRobinPolicy
+import uuid
 
 # Set environment variable for schema management
 os.environ['CQLENG_ALLOW_SCHEMA_MANAGEMENT'] = '1'
@@ -92,3 +93,33 @@ class News(Model):
     title = columns.Text(required=True)
     content = columns.Text(required=True)
     created_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))
+
+class Label(Model):
+    __table_name__ = 'store'
+    
+    id = columns.UUID(primary_key=True, default=uuid.uuid4)
+    name = columns.Text(required=True, unique=True)
+    description = columns.Text()
+    created_at = columns.DateTime(required=True, default=datetime.now(timezone.utc))
+    
+    
+class LabelPost(Model):
+    __keyspace__ = 'store'
+    __table_name__ = 'label_post'
+    
+    tag_id = columns.UUID(primary_key=True)
+    post_id = columns.UUID(primary_key=True)
+    
+    # Compound primary key
+    __primary_key__ = ('tag_id', 'post_id')
+    
+
+class LabelNews(Model):
+    __keyspace__ = 'store'
+    __table_name__ = 'label_news'
+    
+    tag_id = columns.UUID(primary_key=True)
+    news_id = columns.UUID(primary_key=True)
+    
+    # Compound primary key
+    __primary_key__ = ('tag_id', 'news_id')

@@ -3,10 +3,10 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-from fastapi import APIRouter, HTTPException, Query
-from app.db.models import Post, Vote, User, TLSAmount
-from app.db.schemas import PostCreate, PostUpdate, PostResponse
-from uuid import uuid4
+from fastapi import APIRouter, HTTPException, Query, status
+from app.db.models import Post, Vote, User, TLSAmount, LabelPost, Label
+from app.db.schemas import PostCreate, PostUpdate, PostResponse, LabelResponse
+from uuid import uuid4, UUID
 from typing import List
 from datetime import datetime
 import logging
@@ -52,6 +52,11 @@ def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
             post.delete()
             continue  # Skip adding this post to the response
 
+        # Fetch labels associated with the post
+        label_posts = LabelPost.objects(post_id=post.id).all()
+        labels = [Label.objects(id=lp.tag_id).first() for lp in label_posts]
+        labels = [LabelResponse.model_validate(label) for label in labels if label]
+
         post_response = PostResponse(
             id=post.id,
             user_id=post.user_id,
@@ -60,7 +65,10 @@ def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
             created_at=post.created_at,
             is_flagged=post.is_flagged,
             ipfs_hash=post.ipfs_hash,
-            votes=total_votes  # Include total votes
+            votes=total_votes,  # Include total votes
+            upvotes=post.upvotes,
+            downvotes=post.downvotes,
+            labels=labels  # Include labels
         )
         post_responses.append(post_response)
 
@@ -69,10 +77,15 @@ def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
 
     return post_responses
 
-@post_router.post("/", response_model=PostResponse)
+@post_router.post("/", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
 def create_post(post: PostCreate):
-    # Fetch user's wallet address from the User model
-    user = User.objects(wallet_address=post.user_id).first()
+    # Fetch user by ID
+    try:
+        user_uuid = UUID(post.user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid user_id format") from exc
+
+    user = User.objects(id=user_uuid).first()
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -95,10 +108,10 @@ def create_post(post: PostCreate):
             detail=f"Insufficient balance. You need at least {required_tls_amount} TLS to create a post."
         )
 
-    # If balance is sufficient, proceed with creating the post
+    # Create the new post
     new_post = Post(
         id=uuid4(),
-        user_id=post.user_id,
+        user_id=user.id,
         title=post.title,
         content=post.content,
         created_at=datetime.now(),
@@ -106,6 +119,17 @@ def create_post(post: PostCreate):
         ipfs_hash=None
     )
     new_post.save()
+
+    # Associate labels with the post
+    label_ids = post.label_ids or []
+    labels = []
+    for label_id in label_ids:
+        label = Label.objects(id=label_id).first()
+        if not label:
+            raise HTTPException(status_code=404, detail=f"Label with id {label_id} not found")
+        LabelPost.create(tag_id=label.id, post_id=new_post.id)
+        labels.append(LabelResponse.model_validate(label))
+
 
     # Include votes in the response, defaulting to 0
     return PostResponse(
@@ -116,18 +140,25 @@ def create_post(post: PostCreate):
         created_at=new_post.created_at,
         is_flagged=new_post.is_flagged,
         ipfs_hash=new_post.ipfs_hash,
-        votes=0  # Default to 0 for a new post
+        votes=0,  # Default to 0 for a new post
+        upvotes=0,
+        downvotes=0,
+        labels=labels
     )
 
 @post_router.get("/{post_id}", response_model=PostResponse)
-def read_post(post_id: str):
-    db_post = Post.objects.filter(id=post_id).first()
+def read_post(post_id: UUID):
+    db_post = Post.objects(id=post_id).first()
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
 
-    # Ensure upvotes and downvotes are set to 0 if None
-    upvotes = db_post.upvotes or 0
-    downvotes = db_post.downvotes or 0
+    # Calculate net votes
+    net_votes = db_post.upvotes - db_post.downvotes
+
+    # Fetch labels associated with the post
+    label_posts = LabelPost.objects(post_id=post_id).all()
+    labels = [Label.objects(id=lp.tag_id).first() for lp in label_posts]
+    labels = [LabelResponse.model_validate(label) for label in labels if label]
 
     return PostResponse(
         id=db_post.id,
@@ -137,29 +168,68 @@ def read_post(post_id: str):
         created_at=db_post.created_at,
         is_flagged=db_post.is_flagged,
         ipfs_hash=db_post.ipfs_hash,
-        votes=upvotes - downvotes,  # Net vote count
-        upvotes=upvotes,  # Separate upvotes count
-        downvotes=downvotes  # Separate downvotes count
+        votes=net_votes,  # Net vote count
+        upvotes=db_post.upvotes,
+        downvotes=db_post.downvotes,
+        labels=labels  # Include labels
     )
-    
 
 @post_router.put("/{post_id}", response_model=PostResponse)
-def update_post(post_id: str, post: PostUpdate):
+def update_post(post_id: UUID, post: PostUpdate):
     db_post = Post.objects(id=post_id).first()
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
-    
-    for key, value in post.dict(exclude_unset=True).items():
-        setattr(db_post, key, value)
-    
-    db_post.save()
-    return db_post
 
-@post_router.delete("/{post_id}", response_model=PostResponse)
-def delete_post(post_id: str):
+    # Update post fields
+    for key, value in post.dict(exclude_unset=True).items():
+        if key != "label_ids":
+            setattr(db_post, key, value)
+
+    db_post.save()
+
+    # Update labels if provided
+    if post.label_ids is not None:
+        # Remove existing label associations
+        LabelPost.objects(post_id=post_id).delete()
+
+        # Associate new labels
+        for label_id in post.label_ids:
+            label = Label.objects(id=label_id).first()
+            if not label:
+                raise HTTPException(status_code=404, detail=f"Label with id {label_id} not found")
+            LabelPost.create(tag_id=label.id, post_id=db_post.id)
+
+    # Fetch updated labels
+    label_posts = LabelPost.objects(post_id=post_id).all()
+    labels = [Label.objects(id=lp.tag_id).first() for lp in label_posts]
+    labels = [LabelResponse.model_validate(label) for label in labels if label]
+
+    # Recalculate votes if necessary
+    net_votes = db_post.upvotes - db_post.downvotes
+
+    return PostResponse(
+        id=db_post.id,
+        user_id=db_post.user_id,
+        title=db_post.title,
+        content=db_post.content,
+        created_at=db_post.created_at,
+        is_flagged=db_post.is_flagged,
+        ipfs_hash=db_post.ipfs_hash,
+        votes=net_votes,
+        upvotes=db_post.upvotes,
+        downvotes=db_post.downvotes,
+        labels=labels
+    )
+
+@post_router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(post_id: UUID):
     db_post = Post.objects(id=post_id).first()
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
-    
+
+    # Delete label associations
+    LabelPost.objects(post_id=post_id).delete()
+
+    # Delete the post
     db_post.delete()
-    return db_post
+    return
