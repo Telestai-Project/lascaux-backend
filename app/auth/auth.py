@@ -103,13 +103,14 @@ async def signup(user: UserCreate):
     )
     
     user_info = UserInfo(
+        id=db_user.id,
         wallet_address=db_user.wallet_address,
         display_name=db_user.display_name,
+        bio=db_user.bio,
         profile_photo_url=db_user.profile_photo_url,
         created_at=db_user.created_at,
-        # Include the tags
-        tags=db_user.tags,  
-        role_description="General role is the default role given to every user. You'll be promoted based on your activity and contributions to the platform."
+        last_login=db_user.last_login,
+        tags=db_user.tags
     )
     
     return {
@@ -152,13 +153,14 @@ async def signin(payload: dict):
     )
     
     user_info = UserInfo(
+        id=db_user.id,
         wallet_address=db_user.wallet_address,
         display_name=db_user.display_name,
+        bio=db_user.bio,
         profile_photo_url=db_user.profile_photo_url,
         created_at=db_user.created_at,
-        # Include the tags
-        tags=db_user.tags,  
-        role_description="General role is the default role given to every user. You'll be promoted based on your activity and contributions to the platform."
+        last_login=db_user.last_login,
+        tags=db_user.tags
     )
     
     return {

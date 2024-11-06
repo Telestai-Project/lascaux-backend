@@ -21,12 +21,17 @@ class UserCreate(UserBase):
     challenge: str
 
 class UserInfo(BaseModel):
+    id: UUID
     wallet_address: str
     display_name: str
+    bio: Optional[str] = None
     profile_photo_url: Optional[str] = None
     created_at: datetime
+    last_login: Optional[datetime] = None
     tags: List[str] = []
-    role_description: Optional[str] = None
+
+    class Config:
+        model_config = {'from_attributes': True}
 
 class UserResponse(BaseModel):
     id: UUID
