@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from fastapi import APIRouter, HTTPException, status, Request
 from datetime import timedelta, datetime, timezone
 from app.db.models import User, RefreshToken
-from app.db.schemas import UserCreate, Token, TokenRefresh, LogoutRequest
+from app.db.schemas import UserCreate, Token, TokenRefresh, LogoutRequest, UserInfo
 from dotenv import load_dotenv
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer
@@ -60,7 +60,6 @@ def save_refresh_token(user_id: UUID, token: str, expires_at: datetime):
 
 @auth_router.post("/signup", response_model=Token)
 async def signup(user: UserCreate):
-    print("user =>" ,user)
     # Check if the wallet address already exists
     existing_user_by_wallet = User.objects(wallet_address=user.wallet_address).first()
     if existing_user_by_wallet:
@@ -99,10 +98,18 @@ async def signup(user: UserCreate):
         expires_at=datetime.now(timezone.utc) + refresh_token_expires
     )
     
+    user_info = UserInfo(
+        wallet_address=db_user.wallet_address,
+        display_name=db_user.display_name,
+        profile_photo_url=db_user.profile_photo_url,
+        created_at=db_user.created_at
+    )
+    
     return {
         "access_token": access_token,
         "refresh_token": refresh_token_signup,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "user_info": user_info
     }
 
 @auth_router.post("/signin", response_model=Token)
@@ -137,11 +144,45 @@ async def signin(payload: dict):
         expires_at=datetime.now(timezone.utc) + refresh_token_expires
     )
     
+    user_info = UserInfo(
+        wallet_address=db_user.wallet_address,
+        display_name=db_user.display_name,
+        profile_photo_url=db_user.profile_photo_url,
+        created_at=db_user.created_at
+    )
+    
     return {
-            "access_token": access_token,
-             "refresh_token": refresh_token_signin, 
-             "token_type": "bearer"
+        "access_token": access_token,
+        "refresh_token": refresh_token_signin,
+        "token_type": "bearer",
+        "user_info": user_info
     }
+
+@auth_router.post("/token/verify")
+async def verify_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        wallet_address: str = payload.get("sub")
+        if wallet_address is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        
+        # Fetch user from the database
+        user = User.objects(wallet_address=wallet_address).first()
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        
+        # Verify token information matches database values
+        if (payload.get("username") != user.display_name or
+                payload.get("avatar") != user.profile_photo_url or
+                payload.get("wallet_address") != user.wallet_address):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token information does not match user data")
+        
+        return {"valid": True}
+    except JWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        ) from exc
 
 @auth_router.post("/token/refresh", response_model=Token)
 async def refresh_token(token_refresh: TokenRefresh):
@@ -181,10 +222,18 @@ async def refresh_token(token_refresh: TokenRefresh):
             expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
         )
         
+        user_info = UserInfo(
+            wallet_address=user.wallet_address,
+            display_name=user.display_name,
+            profile_photo_url=user.profile_photo_url,
+            created_at=user.created_at
+        )
+        
         return {
             "access_token": new_access_token,
             "refresh_token": new_refresh_token,
-            "token_type": "bearer"
+            "token_type": "bearer",
+            "user_info": user_info
         }
     
     except JWTError as exc:
@@ -192,7 +241,6 @@ async def refresh_token(token_refresh: TokenRefresh):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token"
         ) from exc
-
 
 @auth_router.post("/logout")
 async def logout(logout_request: LogoutRequest, request: Request):
@@ -208,5 +256,3 @@ async def logout(logout_request: LogoutRequest, request: Request):
     if not deleted:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Refresh token not found")
     return {"msg": "Successfully logged out"}
-
-

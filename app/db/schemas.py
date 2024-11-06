@@ -20,6 +20,12 @@ class UserCreate(UserBase):
     signature: str
     challenge: str
 
+class UserInfo(BaseModel):
+    wallet_address: str
+    display_name: str
+    profile_photo_url: Optional[str] = None
+    created_at: datetime
+
 class UserResponse(BaseModel):
     id: UUID
     wallet_address: str
@@ -187,6 +193,7 @@ class Token(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    user_info: UserInfo
 
 class TokenRefresh(BaseModel):
     refresh_token: str
@@ -213,4 +220,5 @@ class LabelUpdate(BaseModel):
     name: Optional[str] = Field(None, example="technology")
     description: Optional[str] = Field(None, example="All things tech-related.")
     
+
 

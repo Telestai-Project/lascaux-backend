@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from cassandra.cluster import Cluster
 from cassandra.cqlengine import connection
 from cassandra.cqlengine.management import sync_table
-from app.db.models import User, Post, Vote, Comment, ModerationLog, TLSAmount, News
+from app.db.models import User, Post, Vote, Comment, ModerationLog, TLSAmount, News, Label, LabelPost, LabelNews
 
 def init_db():
     # Connect to the Cassandra cluster
@@ -30,6 +30,10 @@ def init_db():
     sync_table(ModerationLog)
     sync_table(TLSAmount)
     sync_table(News)
+    sync_table(Label)
+    sync_table(LabelPost)
+    sync_table(LabelNews)
+    
     
     # Shutdown the session and cluster
     session.shutdown()
