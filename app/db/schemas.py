@@ -25,6 +25,8 @@ class UserInfo(BaseModel):
     display_name: str
     profile_photo_url: Optional[str] = None
     created_at: datetime
+    tags: List[str] = []
+    role_description: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: UUID

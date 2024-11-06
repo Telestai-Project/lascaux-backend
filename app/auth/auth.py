@@ -79,7 +79,8 @@ async def signup(user: UserCreate):
         display_name=user.display_name,
         bio=user.bio,
         profile_photo_url=user.profile_photo_url,
-        created_at=datetime.now(timezone.utc)
+        created_at=datetime.now(timezone.utc),
+        tags=["general"]  # Assign default role as "general"
     )
 
     # Create access token
@@ -105,7 +106,10 @@ async def signup(user: UserCreate):
         wallet_address=db_user.wallet_address,
         display_name=db_user.display_name,
         profile_photo_url=db_user.profile_photo_url,
-        created_at=db_user.created_at
+        created_at=db_user.created_at,
+        # Include the tags
+        tags=db_user.tags,  
+        role_description="General role is the default role given to every user. You'll be promoted based on your activity and contributions to the platform."
     )
     
     return {
@@ -151,7 +155,10 @@ async def signin(payload: dict):
         wallet_address=db_user.wallet_address,
         display_name=db_user.display_name,
         profile_photo_url=db_user.profile_photo_url,
-        created_at=db_user.created_at
+        created_at=db_user.created_at,
+        # Include the tags
+        tags=db_user.tags,  
+        role_description="General role is the default role given to every user. You'll be promoted based on your activity and contributions to the platform."
     )
     
     return {
