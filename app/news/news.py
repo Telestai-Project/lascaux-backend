@@ -7,8 +7,8 @@ from uuid import UUID
 from uuid import uuid4
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from app.db.models import News, User, LabelNews, Label
-from app.db.schemas import NewsCreate, NewsResponse, LabelResponse
+from app.db.models import News, User, TagNews, Tag
+from app.db.schemas import NewsCreate, NewsResponse, TagResponse
 
 news_router = APIRouter(prefix="/news", tags=["News"])
 
@@ -33,21 +33,21 @@ async def create_news(news: NewsCreate, request: Request):
         )
         new_news.save()
 
-        # Associate labels with the news
-        label_ids = news.label_ids or []
-        labels = []
-        for label_id in label_ids:
-            label = Label.objects(id=label_id).first()
-            if not label:
-                raise HTTPException(status_code=404, detail=f"Label with id {label_id} not found")
+        # Associate tags with the news
+        tag_ids = news.tags or []
+        tags = []
+        for tag_id in tag_ids:
+            tag = Tag.objects(id=tag_id).first()
+            if not tag:
+                raise HTTPException(status_code=404, detail=f"Tag with id {tag_id} not found")
             
             # Prevent duplicate associations
-            existing_label_news = LabelNews.objects(tag_id=label.id, news_id=new_news.id).first()
-            if existing_label_news:
+            existing_tag_news = TagNews.objects(tag_id=tag.id, news_id=new_news.id).first()
+            if existing_tag_news:
                 continue
             
-            LabelNews.create(tag_id=label.id, news_id=new_news.id)
-            labels.append(LabelResponse.model_validate(label))
+            TagNews.create(tag_id=tag.id, news_id=new_news.id)
+            tags.append(TagResponse.model_validate(tag))
 
         return NewsResponse(
             id=new_news.id,
@@ -55,7 +55,7 @@ async def create_news(news: NewsCreate, request: Request):
             title=new_news.title,
             content=new_news.content,
             created_at=new_news.created_at,
-            labels=labels
+            tags=tags
         )
     except HTTPException as he:
         raise he
@@ -72,11 +72,11 @@ def get_all_news(request: Request):
         news_list = News.objects().all()
         news_responses = []
         for news in news_list:
-            # Fetch labels associated with the news
-            label_news = LabelNews.objects(news_id=news.id).all()
-            label_ids = [ln.tag_id for ln in label_news]
-            labels = Label.objects.filter(id__in=label_ids).all()
-            labels = [LabelResponse.model_validate(label) for label in labels if label]
+            # Fetch tags associated with the news
+            tag_news = TagNews.objects(news_id=news.id).all()
+            tag_ids = [tn.tag_id for tn in tag_news]
+            tags = Tag.objects.filter(id__in=tag_ids).all()
+            tags = [TagResponse.model_validate(tag) for tag in tags if tag]
 
             news_response = NewsResponse(
                 id=news.id,
@@ -84,7 +84,7 @@ def get_all_news(request: Request):
                 title=news.title,
                 content=news.content,
                 created_at=news.created_at,
-                labels=labels
+                tags=tags
             )
             news_responses.append(news_response)
         
@@ -98,11 +98,11 @@ def get_news_item(news_id: UUID):
     if not news:
         raise HTTPException(status_code=404, detail="News item not found")
     
-    # Fetch labels associated with the news
-    label_news = LabelNews.objects(news_id=news_id).all()
-    label_ids = [ln.tag_id for ln in label_news]
-    labels = Label.objects.filter(id__in=label_ids).all()
-    labels = [LabelResponse.model_validate(label) for label in labels if label]
+    # Fetch tags associated with the news
+    tag_news = TagNews.objects(news_id=news_id).all()
+    tag_ids = [tn.tag_id for tn in tag_news]
+    tags = Tag.objects.filter(id__in=tag_ids).all()
+    tags = [TagResponse.model_validate(tag) for tag in tags if tag]
 
     return NewsResponse(
         id=news.id,
@@ -110,7 +110,7 @@ def get_news_item(news_id: UUID):
         title=news.title,
         content=news.content,
         created_at=news.created_at,
-        labels=labels
+        tags=tags
     )
 
 @news_router.put("/{news_id}", response_model=NewsResponse)
@@ -127,29 +127,29 @@ def update_news(news_id: UUID, news_update: NewsCreate):
 
     news.save()
 
-    # Update labels
-    if news_update.label_ids is not None:
-        # Remove existing label associations
-        LabelNews.objects(news_id=news_id).delete()
+    # Update tags
+    if news_update.tags is not None:
+        # Remove existing tag associations
+        TagNews.objects(news_id=news_id).delete()
 
-        # Associate new labels
-        for label_id in news_update.label_ids:
-            label = Label.objects(id=label_id).first()
-            if not label:
-                raise HTTPException(status_code=404, detail=f"Label with id {label_id} not found")
+        # Associate new tags
+        for tag_id in news_update.tags:
+            tag = Tag.objects(id=tag_id).first()
+            if not tag:
+                raise HTTPException(status_code=404, detail=f"Tag with id {tag_id} not found")
             
             # Prevent duplicate associations
-            existing_label_news = LabelNews.objects(tag_id=label.id, news_id=news.id).first()
-            if existing_label_news:
+            existing_tag_news = TagNews.objects(tag_id=tag.id, news_id=news.id).first()
+            if existing_tag_news:
                 continue
             
-            LabelNews.create(tag_id=label.id, news_id=news.id)
+            TagNews.create(tag_id=tag.id, news_id=news.id)
 
-    # Fetch updated labels
-    label_news = LabelNews.objects(news_id=news_id).all()
-    label_ids = [ln.tag_id for ln in label_news]
-    labels = Label.objects.filter(id__in=label_ids).all()
-    labels = [LabelResponse.model_validate(label) for label in labels if label]
+    # Fetch updated tags
+    tag_news = TagNews.objects(news_id=news_id).all()
+    tag_ids = [tn.tag_id for tn in tag_news]
+    tags = Tag.objects.filter(id__in=tag_ids).all()
+    tags = [TagResponse.model_validate(tag) for tag in tags if tag]
 
     return NewsResponse(
         id=news.id,
@@ -157,7 +157,7 @@ def update_news(news_id: UUID, news_update: NewsCreate):
         title=news.title,
         content=news.content,
         created_at=news.created_at,
-        labels=labels
+        tags=tags
     )
 
 @news_router.delete("/{news_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -166,8 +166,8 @@ def delete_news(news_id: UUID):
     if not news:
         raise HTTPException(status_code=404, detail="News item not found")
     
-    # Delete label associations
-    LabelNews.objects(news_id=news_id).delete()
+    # Delete tag associations
+    TagNews.objects(news_id=news_id).delete()
     
     # Delete the news item
     news.delete()

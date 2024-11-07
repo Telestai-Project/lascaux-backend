@@ -4,8 +4,8 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from fastapi import APIRouter, HTTPException, Query, status
-from app.db.models import Post, Vote, User, TLSAmount, LabelPost, Label
-from app.db.schemas import PostCreate, PostUpdate, PostResponse, LabelResponse
+from app.db.models import Post, Vote, User, TLSAmount, TagPost, Tag
+from app.db.schemas import PostCreate, PostUpdate, PostResponse, TagResponse
 from uuid import uuid4, UUID
 from typing import List
 from datetime import datetime
@@ -52,10 +52,10 @@ def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
             post.delete()
             continue  # Skip adding this post to the response
 
-        # Fetch labels associated with the post
-        label_posts = LabelPost.objects(post_id=post.id).all()
-        labels = [Label.objects(id=lp.tag_id).first() for lp in label_posts]
-        labels = [LabelResponse.model_validate(label) for label in labels if label]
+        # Fetch tags associated with the post
+        tag_posts = TagPost.objects(post_id=post.id).all()
+        tags = [Tag.objects(id=tp.tag_id).first() for tp in tag_posts]
+        tags = [TagResponse.model_validate(tag) for tag in tags if tag]
 
         post_response = PostResponse(
             id=post.id,
@@ -68,7 +68,7 @@ def read_all_posts(page: int = Query(1, ge=1), page_size: int = Query(10, ge=1, 
             votes=total_votes,  # Include total votes
             upvotes=post.upvotes,
             downvotes=post.downvotes,
-            labels=labels  # Include labels
+            tags=tags  # Include tags
         )
         post_responses.append(post_response)
 
@@ -121,21 +121,21 @@ def create_post(post: PostCreate):
     )
     new_post.save()
 
-    # Associate labels with the post
-    label_ids = post.label_ids or []
-    labels = []
-    for label_id in label_ids:
-        label = Label.objects(id=label_id).first()
-        if not label:
-            raise HTTPException(status_code=404, detail=f"Label with id {label_id} not found")
+    # Associate tags with the post
+    tag_ids = post.tags or []
+    tags = []
+    for tag_id in tag_ids:
+        tag = Tag.objects(id=tag_id).first()
+        if not tag:
+            raise HTTPException(status_code=404, detail=f"Tag with id {tag_id} not found")
         
         # Prevent duplicate associations
-        existing_label_post = LabelPost.objects(tag_id=label.id, post_id=new_post.id).first()
-        if existing_label_post:
+        existing_tag_post = TagPost.objects(tag_id=tag.id, post_id=new_post.id).first()
+        if existing_tag_post:
             continue
 
-        LabelPost.create(tag_id=label.id, post_id=new_post.id)
-        labels.append(LabelResponse.model_validate(label))
+        TagPost.create(tag_id=tag.id, post_id=new_post.id)
+        tags.append(TagResponse.model_validate(tag))
 
     # Include votes in the response, defaulting to 0
     return PostResponse(
@@ -149,7 +149,7 @@ def create_post(post: PostCreate):
         votes=0,  # Default to 0 for a new post
         upvotes=0,
         downvotes=0,
-        labels=labels
+        tags=tags
     )
 
 
@@ -162,10 +162,10 @@ def read_post(post_id: UUID):
     # Calculate net votes
     net_votes = db_post.upvotes - db_post.downvotes
 
-    # Fetch labels associated with the post
-    label_posts = LabelPost.objects(post_id=post_id).all()
-    labels = [Label.objects(id=lp.tag_id).first() for lp in label_posts]
-    labels = [LabelResponse.model_validate(label) for label in labels if label]
+    # Fetch tags associated with the post
+    tag_posts = TagPost.objects(post_id=post_id).all()
+    tags = [Tag.objects(id=tp.tag_id).first() for tp in tag_posts]
+    tags = [TagResponse.model_validate(tag) for tag in tags if tag]
 
     return PostResponse(
         id=db_post.id,
@@ -178,7 +178,7 @@ def read_post(post_id: UUID):
         votes=net_votes,  # Net vote count
         upvotes=db_post.upvotes,
         downvotes=db_post.downvotes,
-        labels=labels  # Include labels
+        tags=tags  # Include tags
     )
 
 @post_router.put("/{post_id}", response_model=PostResponse)
@@ -189,27 +189,27 @@ def update_post(post_id: UUID, post: PostUpdate):
 
     # Update post fields
     for key, value in post.dict(exclude_unset=True).items():
-        if key != "label_ids":
+        if key != "tags":
             setattr(db_post, key, value)
 
     db_post.save()
 
-    # Update labels if provided
-    if post.label_ids is not None:
-        # Remove existing label associations
-        LabelPost.objects(post_id=post_id).delete()
+    # Update tags if provided
+    if post.tags is not None:
+        # Remove existing tag associations
+        TagPost.objects(post_id=post_id).delete()
 
-        # Associate new labels
-        for label_id in post.label_ids:
-            label = Label.objects(id=label_id).first()
-            if not label:
-                raise HTTPException(status_code=404, detail=f"Label with id {label_id} not found")
-            LabelPost.create(tag_id=label.id, post_id=db_post.id)
+        # Associate new tags
+        for tag_id in post.tags:
+            tag = Tag.objects(id=tag_id).first()
+            if not tag:
+                raise HTTPException(status_code=404, detail=f"Tag with id {tag_id} not found")
+            TagPost.create(tag_id=tag.id, post_id=db_post.id)
 
-    # Fetch updated labels
-    label_posts = LabelPost.objects(post_id=post_id).all()
-    labels = [Label.objects(id=lp.tag_id).first() for lp in label_posts]
-    labels = [LabelResponse.model_validate(label) for label in labels if label]
+    # Fetch updated tags
+    tag_posts = TagPost.objects(post_id=post_id).all()
+    tags = [Tag.objects(id=tp.tag_id).first() for tp in tag_posts]
+    tags = [TagResponse.model_validate(tag) for tag in tags if tag]
 
     # Recalculate votes if necessary
     net_votes = db_post.upvotes - db_post.downvotes
@@ -225,7 +225,7 @@ def update_post(post_id: UUID, post: PostUpdate):
         votes=net_votes,
         upvotes=db_post.upvotes,
         downvotes=db_post.downvotes,
-        labels=labels
+        tags=tags
     )
 
 @post_router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -234,8 +234,8 @@ def delete_post(post_id: UUID):
     if db_post is None:
         raise HTTPException(status_code=404, detail="Post not found")
 
-    # Delete label associations
-    LabelPost.objects(post_id=post_id).delete()
+    # Delete tag associations
+    TagPost.objects(post_id=post_id).delete()
 
     # Delete the post
     db_post.delete()

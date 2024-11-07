@@ -94,7 +94,7 @@ class News(Model):
     content = columns.Text(required=True)
     created_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))
 
-class Label(Model):
+class Tag(Model):
     __table_name__ = 'store'
     
     id = columns.UUID(primary_key=True, default=uuid.uuid4)
@@ -102,10 +102,9 @@ class Label(Model):
     description = columns.Text()
     created_at = columns.DateTime(required=True, default=datetime.now(timezone.utc))
     
-    
-class LabelPost(Model):
+class TagPost(Model):
     __keyspace__ = 'store'
-    __table_name__ = 'label_post'
+    __table_name__ = 'tag_post'
     
     tag_id = columns.UUID(primary_key=True)
     post_id = columns.UUID(primary_key=True)
@@ -113,10 +112,9 @@ class LabelPost(Model):
     # Compound primary key
     __primary_key__ = ('tag_id', 'post_id')
     
-
-class LabelNews(Model):
+class TagNews(Model):
     __keyspace__ = 'store'
-    __table_name__ = 'label_news'
+    __table_name__ = 'tag_news'
     
     tag_id = columns.UUID(primary_key=True)
     news_id = columns.UUID(primary_key=True)

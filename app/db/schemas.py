@@ -60,23 +60,22 @@ class PostCreate(BaseModel):
     user_id: str
     title: str
     content: str
-    label_ids: Optional[List[UUID]] = Field(
+    tags: Optional[List[str]] = Field(
         default_factory=list,
-        example=["label-uuid-1", "label-uuid-2"]
-    ) 
+        example=["politics", "food"]
+    )
 
 
 class PostUpdate(BaseModel):
     content: Optional[str] = None
     is_flagged: Optional[bool] = None
     ipfs_hash: Optional[str] = None
-    label_ids: Optional[List[UUID]] = Field(
+    tags: Optional[List[str]] = Field(
         default_factory=list,
-        example=["label-uuid-1", "label-uuid-2"]
+        example=["technology", "comedy"]
     )
     
-    
-class LabelResponse(BaseModel):
+class TagResponse(BaseModel):
     id: UUID
     name: str
     description: Optional[str]
@@ -93,7 +92,7 @@ class PostResponse(PostBase):
     votes: int  # Net votes (upvotes - downvotes)
     upvotes: int = 0  
     downvotes: int = 0  
-    labels: List[LabelResponse] = []  # New field for labels
+    tags: List[str] = []  # New field for tags
 
     class Config:
         model_config = {'from_attributes': True}
@@ -171,18 +170,18 @@ class NewsCreate(BaseModel):
     admin_id: UUID  # Ensure it's UUID, not str
     title: str
     content: str
-    label_ids: Optional[List[UUID]] = Field(
+    tags: Optional[List[str]] = Field(
         default_factory=list,
-        example=["label-uuid-1", "label-uuid-2"]
+        example=["politics", "technology"]
     )
 
     
 class NewsUpdate(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
-    label_ids: Optional[List[UUID]] = Field(
+    tags: Optional[List[str]] = Field(
         default_factory=list,
-        example=["label-uuid-1", "label-uuid-2"]
+        example=["food", "comedy"]
     )
     
 class NewsResponse(BaseModel):
@@ -191,7 +190,7 @@ class NewsResponse(BaseModel):
     title: str
     content: str
     created_at: datetime
-    labels: List[LabelResponse] = []  # New field for labels
+    tags: List[str] = []  # New field for tags
 
     class Config:
         model_config = {'from_attributes': True}
@@ -218,14 +217,11 @@ class RefreshTokenResponse(BaseModel):
     class Config:
         model_config = {'from_attributes': True}
         
-class LabelCreate(BaseModel):
+class TagCreate(BaseModel):
     name: str = Field(..., example="tech")
     description: Optional[str] = Field(None, example="Technology related news and articles.")
     
         
-class LabelUpdate(BaseModel):
+class TagUpdate(BaseModel):
     name: Optional[str] = Field(None, example="technology")
     description: Optional[str] = Field(None, example="All things tech-related.")
-    
-
-
