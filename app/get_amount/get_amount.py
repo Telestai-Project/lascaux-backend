@@ -3,14 +3,11 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
-
-import json
 import requests
 import time
 import math
 from dotenv import load_dotenv
 from app.db.models import TLSAmount
-from requests.exceptions import RequestException, Timeout
 from datetime import datetime, timezone
 from cassandra import InvalidRequest, OperationTimedOut, Unavailable
 from bs4 import BeautifulSoup
@@ -18,48 +15,49 @@ from bs4 import BeautifulSoup
 # Load environment variables
 load_dotenv()
 
-API_KEY = os.getenv("LIVECOINWATCH_API")
 REQUIRED_AMOUNT = int(os.getenv("REQUIRED_AMOUNT", 2)) # pylint: disable=invalid-envvar-default
 
-
-    
 def fetch_price():
-    url = "https://api.livecoinwatch.com/coins/single"
-    payload = json.dumps({
-        "currency": "USD",
-        "code": "TLS",
-        "meta": True
-    })
-
+    url = "https://api.xeggex.com/api/v2/asset/getbyticker/tls"
     headers = {
-        'content-type': 'application/json',
-        'x-api-key': API_KEY,
+        'accept': 'application/json',
     }
 
     try:
-        response = requests.request("POST", url, headers=headers, data=payload, timeout=5)
+        response = requests.get(url, headers=headers, timeout=5)
         response.raise_for_status()  # Check for HTTP errors
 
         data = response.json()
         
-        # Handle cases where data is None or doesn't contain 'rate'
-        if data is None or 'rate' not in data:
+        # Handle cases where data contains an error
+        if 'error' in data:
+            error_code = data['error'].get('code', 'Unknown')
+            error_message = data['error'].get('message', 'No message provided')
+            print(f"Error fetching price: Code {error_code}, Message: {error_message}")
             return None
         
-        price = data.get('rate')
+        # Handle cases where data is None or doesn't contain 'usdValue'
+        if data is None or 'usdValue' not in data:
+            print("Error: 'usdValue' not found in the response data.")
+            return None
+        
+        price = float(data.get('usdValue'))
         return price
     
-    except (RequestException, Timeout):
+    except requests.Timeout:
+        print("Error: The request timed out.")
+        return None
+    except requests.RequestException as e:
+        print(f"Error: {e}")
         return None
 
-
-def calculate_tls_for_required_amount(price):
-    if price is None:
+def calculate_tls_for_required_amount(tls_price):
+    if tls_price is None:
         print("Price is None, skipping calculation.")
         return None
     
     try:
-        tls_amount = REQUIRED_AMOUNT / price
+        tls_amount = REQUIRED_AMOUNT / tls_price
         tls_amount_rounded = math.ceil(tls_amount)
         return tls_amount_rounded
     except ZeroDivisionError:
@@ -69,8 +67,8 @@ def calculate_tls_for_required_amount(price):
 
 def update_price_every_10_mins():
     while True:
-        price = fetch_price()
-        tls_amount = calculate_tls_for_required_amount(price)
+        tls_price = fetch_price()
+        tls_amount = calculate_tls_for_required_amount(tls_price)
 
         if tls_amount is not None:
             store_required_amount_to_db(tls_amount)
@@ -135,8 +133,6 @@ def fetch_user_balance(address):
     except Exception as e:
         print(f"Unexpected error: {str(e)}")
         return None
-
-
 
 
 

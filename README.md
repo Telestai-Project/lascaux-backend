@@ -95,7 +95,6 @@ Lascaux is a decentralized, text-based social media platform designed to empower
    cp .env.example .env
    ```
 
-2. Follow the instructions in the .env or .env.example file to get your api key.
    
 ## OPTIONAL 
 Create a venv environment. 
