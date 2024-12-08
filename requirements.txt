@@ -12,3 +12,4 @@ python-bitcoinrpc
 beautifulsoup4
 python-jose
 pyotp
+cryptography
