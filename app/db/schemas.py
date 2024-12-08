@@ -225,3 +225,7 @@ class TagCreate(BaseModel):
 class TagUpdate(BaseModel):
     name: Optional[str] = Field(None, example="technology")
     description: Optional[str] = Field(None, example="All things tech-related.")
+
+class Confirm2FARequest(BaseModel):
+    secret: str
+    code: str

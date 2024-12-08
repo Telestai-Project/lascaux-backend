@@ -31,12 +31,15 @@ class User(Model):
     created_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))
     last_login = columns.DateTime()
     tags = columns.List(columns.Text)  # stores roles
-
+    two_fa_secret = columns.Text()
+    two_fa_salt = columns.Text()
+    encryption_key = columns.Text()
+    
 class RefreshToken(Model):
     __keyspace__ = 'store'
     id = columns.UUID(primary_key=True, default=uuid4)
-    user_id = columns.UUID(required=True, index=True)
-    token = columns.Text(required=True)
+    user_id = columns.UUID(partition_key=True, index=True)
+    token = columns.Text(partition_key=True)
     expires_at = columns.DateTime(required=True)
     created_at = columns.DateTime(default=lambda: datetime.now(timezone.utc))
 

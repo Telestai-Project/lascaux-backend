@@ -1,15 +1,20 @@
 import os
 import sys
+from datetime import timedelta, datetime, timezone
+from uuid import UUID
+import base64
+from dotenv import load_dotenv
+import pyotp
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 from fastapi import APIRouter, HTTPException, status, Request
-from datetime import timedelta, datetime, timezone
 from app.db.models import User, RefreshToken
-from app.db.schemas import UserCreate, Token, TokenRefresh, LogoutRequest, UserInfo
-from dotenv import load_dotenv
+from app.db.schemas import UserCreate, Token, TokenRefresh, LogoutRequest, UserInfo, Confirm2FARequest
+from app.auth.encryption import generate_encryption_key, encrypt_2fa_secret, decrypt_2fa_secret
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer
-from uuid import UUID
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,6 +27,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/signin")
+
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
@@ -120,38 +126,69 @@ async def signup(user: UserCreate):
         "user_info": user_info
     }
 
+
 @auth_router.post("/signin", response_model=Token)
 async def signin(payload: dict):
-    # Ensure this matches the frontend payload key
-    wallet_address = payload.get("wallet_address")  
-    
+    wallet_address = payload.get("wallet_address")
+    if not wallet_address:
+        raise HTTPException(status_code=400, detail="Missing wallet address")
+
     # Check if the user exists
     db_user = User.objects(wallet_address=wallet_address).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    # Update last_login
+
+    # Check if 2FA is enabled
+    if db_user.two_fa_secret:
+        two_fa_code = payload.get("two_fa_code")
+        if not two_fa_code:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing 2FA code")
+
+        try:
+            # Decode Base64-encoded encryption key
+            encryption_key = base64.b64decode(db_user.encryption_key.encode('utf-8'))
+
+            # Decrypt the 2FA secret
+            decrypted_secret = decrypt_2fa_secret(db_user.two_fa_secret, encryption_key)
+
+            # Verify the provided 2FA code using TOTP
+            totp = pyotp.TOTP(decrypted_secret)
+            if not totp.verify(two_fa_code):
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid 2FA code")
+
+        except ValueError as val_err:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Decryption failed. Please contact support."
+            ) from val_err
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An unexpected error occurred while verifying 2FA."
+            ) from exc
+
+    # Update last_login timestamp
     db_user.update(last_login=datetime.now(timezone.utc))
-    
-    # Create access token
+
+    # Create tokens
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": db_user.wallet_address}, expires_delta=access_token_expires
     )
-    
-    # Create refresh token
+
     refresh_token_expires = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     refresh_token_signin = create_refresh_token(
         data={"sub": db_user.wallet_address}, expires_delta=refresh_token_expires
     )
-    
-    # Save refresh token to DB
+
+    # Save refresh token
     save_refresh_token(
         user_id=db_user.id,
         token=refresh_token_signin,
         expires_at=datetime.now(timezone.utc) + refresh_token_expires
     )
-    
+
+    # Prepare user info
     user_info = UserInfo(
         id=db_user.id,
         wallet_address=db_user.wallet_address,
@@ -160,15 +197,17 @@ async def signin(payload: dict):
         profile_photo_url=db_user.profile_photo_url,
         created_at=db_user.created_at,
         last_login=db_user.last_login,
-        tags=db_user.tags
+        tags=db_user.tags,
     )
-    
+
     return {
         "access_token": access_token,
         "refresh_token": refresh_token_signin,
         "token_type": "bearer",
-        "user_info": user_info
+        "user_info": user_info,
     }
+
+
 
 @auth_router.post("/token/verify")
 async def verify_token(token: str):
@@ -259,16 +298,23 @@ async def logout(logout_request: LogoutRequest, request: Request):
     # Logs out a user by deleting the provided refresh token from the database.
     # Accessing the user from middleware
     user: User = request.state.user  
-
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-
+    
     # Delete the provided refresh token from the database
-    deleted = RefreshToken.objects.filter(user_id=user.id, token=logout_request.refresh_token).delete()
-    if not deleted:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Refresh token not found")
+    refresh_token_to_delete = logout_request.refresh_token
+    
+    try:
+        # Query by partition key
+        refresh_token_entry = RefreshToken.get(user_id=user.id, token=refresh_token_to_delete)
+        refresh_token_entry.delete()
+    except RefreshToken.DoesNotExist as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Refresh token not found"
+        ) from exc
+        
     return {"msg": "Successfully logged out"}
-
 
 @auth_router.post("/roles/create")
 async def create_role(role_name: str, request: Request):
@@ -289,3 +335,82 @@ async def create_role(role_name: str, request: Request):
     user.update(push__tags=role_name)
 
     return {"msg": f"Role '{role_name}' created successfully"}
+
+
+
+@auth_router.post("/2fa/enable")
+async def enable_2fa(request: Request):
+    user = request.state.user
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    if user.two_fa_secret:  # Check if 2FA is already enabled
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="2FA is already enabled for this account. Disable it before enabling it again."
+        )
+
+    try:
+        # Generate a secret key for TOTP
+        secret = pyotp.random_base32()
+
+        # Generate the provisioning URI for QR code
+        provisioning_uri = pyotp.totp.TOTP(secret).provisioning_uri(
+            name=user.display_name, issuer_name="Lascaux" # Name of app
+        )
+
+        return {"provisioning_uri": provisioning_uri, "secret": secret} 
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred while enabling 2FA: {str(exc)}"
+        ) from exc
+
+    
+@auth_router.post("/2fa/confirm")
+async def confirm_2fa(request: Request, body: Confirm2FARequest):
+    user: User = request.state.user
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    try:
+        # Validate the provided TOTP code using the secret
+        totp = pyotp.TOTP(body.secret)
+        if not totp.verify(body.code):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid 2FA code. Please try again."
+            )
+
+        # Generate encryption key and encrypt the secret
+        encryption_key = generate_encryption_key()
+        encrypted_secret = encrypt_2fa_secret(body.secret, encryption_key)
+        encoded_encryption_key = base64.b64encode(encryption_key).decode('utf-8')
+
+        # Update user with encrypted secret and key
+        user.update(
+            two_fa_secret=encrypted_secret, 
+            encryption_key=encoded_encryption_key
+        )
+
+        return {"msg": "2FA confirmed and enabled successfully"}
+
+    except Exception as exc:
+        user_id = getattr(user, "id", "unknown")
+        print(f"Error confirming 2FA for user {user_id}: {type(exc).__name__} - {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while confirming 2FA."
+        ) from exc
+        
+@auth_router.post("/2fa/disable")
+async def disable_2fa(request: Request):
+    user: User = request.state.user
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+
+    # Remove the 2FA secret from the database
+    user.update(two_fa_secret=None, two_fa_salt=None)
+
+    return {"msg": "2FA disabled"}
