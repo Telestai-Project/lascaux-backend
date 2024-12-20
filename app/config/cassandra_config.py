@@ -1,7 +1,7 @@
 from cassandra.cluster import Cluster
 
 def get_cluster():
-    return Cluster(['127.0.0.1'])
+    return Cluster(['127.0.0.1'], port=9052)
 
 def create_keyspace(session, keyspace="lascaux"):
     session.execute(f"""

@@ -18,7 +18,7 @@ def init_db():
     create_keyspace(session, "lascaux")
 
     # Setup connection for cqlengine
-    connection.setup(['127.0.0.1'], "lascaux", protocol_version=3)
+    connection.setup(['127.0.0.1'], "lascaux", protocol_version=3, port=9052)
 
     # Sync tables
     sync_table(user.User)
