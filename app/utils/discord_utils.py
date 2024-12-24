@@ -28,7 +28,7 @@ default_profile = ExecutionProfile(
 
 cluster = Cluster(
     ['127.0.0.1'],
-    port=9042,
+    port=9052,
     connect_timeout=10.0,
     execution_profiles={
         EXEC_PROFILE_DEFAULT: default_profile
