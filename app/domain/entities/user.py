@@ -15,6 +15,6 @@ class User(Model):
     roles = columns.List(columns.Text(), default=['general'])
     invited_by = columns.UUID()
     rank = columns.Text(default=None)
-    followers_count = columns.Integer(default=0)
+    followers = columns.List(columns.UUID(), default=[])
 
 

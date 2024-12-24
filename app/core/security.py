@@ -31,10 +31,14 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
             "bio": user.bio,
             "roles": user.roles,
             "rank": user.rank,
-            "followers_count": user.followers_count,
+            "followers": [str(follower) for follower in user.followers],
             "role": user.roles[0] if user.roles else "general",
             "role_description": "General role is the default role given to every user. You'll be promoted based on your activity and contributions to the platform."
         })
+        
+    for key, value in to_encode.items():
+        if isinstance(value, UUID):
+            to_encode[key] = str(value)
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -46,6 +50,11 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 def create_refresh_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
+    
+    for key, value in to_encode.items():
+        if isinstance(value, UUID):
+            to_encode[key] = str(value)
+            
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:

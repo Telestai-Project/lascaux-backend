@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
+from app.domain.repositories.badge_repository import BadgeRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.repositories.token_repository import RefreshTokenRepository
 from app.models.auth import UserCreate, UserInfo, Token, SigninRequest, TokenRefresh
@@ -22,6 +23,7 @@ class AuthService:
             "display_name": user.display_name,
             "bio": user.bio,
             "profile_photo_url": user.profile_photo_url,
+            "rank": user.rank,
             "created_at": datetime.now(timezone.utc),
         })
 
@@ -41,6 +43,9 @@ class AuthService:
             expires_at=datetime.now(timezone.utc) + refresh_token_expires
         )
 
+        badges = await BadgeRepository.get_badges_by_user_id(db_user.id)
+        db_user.badges = [badge.badge_name for badge in badges]
+
         user_info = UserInfo(
             id=db_user.id,
             wallet_address=db_user.wallet_address,
@@ -52,7 +57,8 @@ class AuthService:
             roles=db_user.roles,
             invited_by=db_user.invited_by,
             rank=db_user.rank,
-            followers_count=db_user.followers_count
+            followers=db_user.followers,
+            badges=db_user.badges or []
         ).model_dump()
 
         return Token(
@@ -86,6 +92,9 @@ class AuthService:
             expires_at=datetime.now(timezone.utc) + refresh_token_expires
         )
         
+        badges = await BadgeRepository.get_badges_by_user_id(db_user.id)
+        db_user.badges = [badge.badge_name for badge in badges]
+        
         user_info = UserInfo(
             id=db_user.id,
             wallet_address=db_user.wallet_address,
@@ -97,9 +106,9 @@ class AuthService:
             roles=db_user.roles,
             invited_by=db_user.invited_by,
             rank=db_user.rank,
-            followers_count=db_user.followers_count
+            followers=db_user.followers,
+            badges=db_user.badges or []
         ).model_dump()
-        
         return Token(
             access_token=access_token,
             refresh_token=refresh_token_signin,
@@ -168,6 +177,9 @@ class AuthService:
                 expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
             )
 
+            badges = await BadgeRepository.get_badges_by_user_id(user.id)
+            user.badges = [badge.badge_name for badge in badges]
+
             user_info = UserInfo(
                 id=user.id,
                 wallet_address=user.wallet_address,
@@ -179,7 +191,8 @@ class AuthService:
                 roles=user.roles,
                 invited_by=user.invited_by,
                 rank=user.rank,
-                followers_count=user.followers_count
+                followers=user.followers,
+                badges=user.badges
             ).model_dump()
 
             return Token(

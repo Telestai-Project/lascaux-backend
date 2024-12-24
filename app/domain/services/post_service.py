@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from datetime import datetime, timezone
 from fastapi import HTTPException, Query
 from app.domain.entities.post import Post, PostView
+from app.domain.repositories.badge_repository import BadgeRepository
 from app.models.post import PostCreate, PostResponse, PostUpdate, ReplyCreate, ReplyResponse, ReplyUpdate
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.repositories.post_repository import PostRepository
@@ -49,6 +50,11 @@ class PostService:
         user = await UserRepository.get_by_user_id(user_uuid)
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
+        existing_posts = await PostRepository.get_posts_by_userID(user_uuid)
+        if existing_posts:
+            is_first_post = len(existing_posts) == 0
+        else:
+            is_first_post = True
         new_post = await PostRepository.create_post({
             "id": uuid4(),
             "user_id": user.id,
@@ -70,11 +76,21 @@ class PostService:
                     "created_at": datetime.now(timezone.utc),
                 })
                 
+        if is_first_post:
+            existing_badge = await BadgeRepository.get_badge_by_user_id_and_badge_name(user.id, "First Post")
+            if existing_badge is None:
+                await BadgeRepository.create_badge({
+                    "id": uuid4(),
+                    "user_id": user.id,
+                    "badge_name": "First Post",
+                    "created_at": datetime.now(timezone.utc)
+                })
+        
+        badges = await BadgeRepository.get_badges_by_user_id(user.id)
+        user.badges = [badge.badge_name for badge in badges]
         return PostResponse(
             id=new_post.id,
-            user_id=user.id,
-            user_name=user.display_name,
-            profile_photo_url=user.profile_photo_url,
+            user=user,
             title=new_post.title,
             tags=new_post.tags,
             content=new_post.content,
@@ -103,17 +119,15 @@ class PostService:
             post_id = post.id
             user = await UserRepository.get_by_user_id(post.user_id)
             if user is None:
-                user_name = "Unknown User"
-            else:
-                user_name = user.display_name
+                raise HTTPException(status_code=404, detail="User not found")
             upvotes = vote_totals.get(post_id, {}).get('upvotes', 0)
             downvotes = vote_totals.get(post_id, {}).get('downvotes', 0)
             replies = await PostService.get_replies_by_post_id(post.id)
+            badges = await BadgeRepository.get_badges_by_user_id(user.id)
+            user.badges = [badge.badge_name for badge in badges]
             post_response = PostResponse(
                 id=post.id,
-                user_id=post.user_id,
-                user_name=user_name,
-                profile_photo_url=user.profile_photo_url,
+                user=user,
                 title=post.title,
                 tags=post.tags,
                 content=post.content,
@@ -141,12 +155,11 @@ class PostService:
         user = await UserRepository.get_by_user_id(fetch_post.user_id)
         vote_totals = await VoteRepository.calculate_votes_by_id(post_id)
         replies = await PostService.get_replies_by_post_id(post_id)
-        
+        badges = await BadgeRepository.get_badges_by_user_id(user.id)
+        user.badges = [badge.badge_name for badge in badges]
         return PostResponse(
             id=fetch_post.id,
-            user_id=fetch_post.user_id,
-            user_name=user.display_name,
-            profile_photo_url=user.profile_photo_url,
+            user=user,
             title=fetch_post.title,
             tags=fetch_post.tags,
             content=fetch_post.content,
@@ -327,11 +340,11 @@ class PostService:
             upvotes = vote_totals.get(post_id, {}).get('upvotes', 0)
             downvotes = vote_totals.get(post_id, {}).get('downvotes', 0)
             replies = await PostService.get_replies_by_post_id(post.id)
+            badges = await BadgeRepository.get_badges_by_user_id(user.id)
+            user.badges = [badge.badge_name for badge in badges]
             post_response = PostResponse(
                 id=post.id,
-                user_id=post.user_id,
-                user_name=user_name,
-                profile_photo_url=user.profile_photo_url,
+                user=user,
                 title=post.title,
                 tags=post.tags,
                 content=post.content,

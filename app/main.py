@@ -5,6 +5,7 @@ from app.api.v1.endpoints import user
 from app.api.v1.endpoints import posts
 from app.api.v1.endpoints import news
 from app.api.v1.endpoints import votes
+from app.api.v1.endpoints import mentions
 from app.core.database import init_db
 from fastapi.middleware.cors import CORSMiddleware
 from app.middleware.auth_middleware import AuthMiddleware
@@ -34,6 +35,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth.auth_router, prefix="/api/v1", tags=["Authentication"])
 app.include_router(user.user_router, prefix="/api/v1", tags=["Users"])
 app.include_router(posts.post_router, prefix="/api/v1", tags=["Posts And Replies"])
+app.include_router(mentions.mention_router, prefix="/api/v1", tags=["Mentions"])
 app.include_router(news.news_router, prefix="/api/v1", tags=["News"])
 app.include_router(votes.vote_router, prefix="/api/v1", tags=["Votes"])
 

@@ -7,7 +7,7 @@ from cassandra.cluster import Cluster
 from cassandra.cqlengine import connection
 from cassandra.cqlengine.management import sync_table
 from app.config.cassandra_config import get_cluster, create_keyspace
-from app.domain.entities import mention, news, post, user, reply, token, vote
+from app.domain.entities import mention, news, post, user, reply, token, vote, badge
 
 def init_db():
     # Connect to the Cassandra cluster
@@ -29,6 +29,7 @@ def init_db():
     sync_table(vote.Vote)
     sync_table(mention.Mention)
     sync_table(news.News)
+    sync_table(badge.Badge)
     # sync_table(Label)
     # sync_table(LabelPost)
     # sync_table(LabelNews)

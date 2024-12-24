@@ -26,3 +26,15 @@ class MentionRepository:
                 status_code=500,
                 detail=f"Failed to delete mentions: {str(e)}"
             )
+        
+    @staticmethod
+    async def get_mentions_by_user_id(user_id: UUID) -> List[Mention]:
+        return Mention.objects.filter(mentioned_user_id=user_id).all()
+
+    @staticmethod
+    async def mark_as_read(post_id: UUID, mention_id: UUID) -> Mention:
+        mention = Mention.objects.filter(post_id=post_id, id=mention_id).first()
+        if mention:
+            mention.is_read = True
+            mention.save()
+        return mention

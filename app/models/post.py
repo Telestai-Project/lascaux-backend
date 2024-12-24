@@ -3,7 +3,7 @@ from typing import Optional, List
 from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
-
+from app.schemas.user import UserResponse
 class PostBase(BaseModel):
     title: str
     tags: List[str] = []
@@ -30,9 +30,7 @@ class ReplyResponse(BaseModel):
 
 class PostResponse(PostBase):
     id: UUID
-    user_id: UUID
-    user_name: str
-    profile_photo_url: str
+    user: UserResponse
     created_at: datetime
     updated_at: Optional[datetime] = None
     upvotes: int = 0

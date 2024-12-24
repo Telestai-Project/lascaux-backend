@@ -13,7 +13,7 @@ class UserCreate(BaseModel):
     display_name: str
     bio: Optional[str] = None
     profile_photo_url: Optional[str] = None
-
+    rank: Optional[str] = None
 class Token(BaseModel):
     access_token: str
     refresh_token: str
@@ -40,4 +40,5 @@ class UserInfo(BaseModel):
     roles: List[str] = ["general"]
     invited_by: Optional[UUID]
     rank: Optional[str] = None
-    followers_count: int = 0
+    followers: List[UUID] = []
+    badges: List[str] = []

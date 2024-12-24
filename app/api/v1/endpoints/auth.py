@@ -7,6 +7,7 @@ auth_router = APIRouter(prefix="/auth")
 @auth_router.post("/signup", response_model=Token)
 async def signup(user: UserCreate):
     try:
+        print(user, "user::::::::::::::")
         token = await AuthService.signup(user)
         return token
     except ValueError as e:

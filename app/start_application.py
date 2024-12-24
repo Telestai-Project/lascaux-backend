@@ -23,7 +23,7 @@ def start_application():
         start_cassandra_container()
 
         logger.info("Ensuring Cassandra is fully initialized...")
-        time.sleep(60)
+        time.sleep(15)
 
         start_fastapi_server()
     except Exception as e:

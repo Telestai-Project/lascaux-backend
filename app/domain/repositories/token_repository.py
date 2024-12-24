@@ -9,7 +9,8 @@ class RefreshTokenRepository:
         token_record = RefreshToken.objects.filter(user_id=user_id, token=token).first()
         if token_record:
             token_record.delete()
-            return not RefreshToken.objects.filter(user_id=user_id, token=token).first()
+            still_exists = RefreshToken.objects.filter(user_id=user_id, token=token).first()
+            return not still_exists
         return False
     
     @staticmethod

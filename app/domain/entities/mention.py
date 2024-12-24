@@ -10,3 +10,4 @@ class Mention(Model):
     id = columns.UUID(primary_key=True, default=uuid4)
     mentioned_user_id = columns.UUID(index=True, required=True) 
     created_at = columns.DateTime(default=lambda: datetime.now(timezone.utc)) 
+    is_read = columns.Boolean(default=False)
