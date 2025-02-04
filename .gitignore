@@ -1,47 +1,89 @@
-# Python-specific ignores
-__pycache__/
+# Ignore all __pycache__ directories and their contents
+**/__pycache__/
 *.py[cod]
-*.pyo
-*.pyd
+*$py.class
+
+# Byte-compiled / optimized / DLL files
+*.so
+
+# Distribution / packaging
 .Python
 env/
 venv/
-ENV/
-venv.bak/
-*.env
-*.env.*
 .venv/
+.venv_new/
+ENV/
+.envrc
+env.bak/
+*.egg-info/
+*.egg
+build/
+dist/
+pip-wheel-metadata/
+*.whl
 
-# SQLite database files
-*.db
-*.sqlite3
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
 
-# FastAPI log files
-logs/
-*.log
+# pyenv
+.python-version
 
-# Python virtual environment files
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Pytest cache and testing-related ignores
-.pytest_cache/
-coverage/
-htmlcov/
-.tox/
-.cache/
-*.cover
-
-# Uvicorn reload file (optional)
-*.reload
-
-# IDEs and editors
+# IDE / editor directories
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# VS Code workspace settings
+*.code-workspace
+
+# Log files
+*.log
+
+# MyPy type check reports
+.mypy_cache/
+
+# Pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+
+# Test output
+*.pytest_cache
+
+# Linting and profiling
+.pyre/
+.pytype/
+.pyre_cache/
+.pyright_cache/
+profiling/
+*.prof
+
+# Temporary files
+*.tmp
+*.bak
 *.swp
 *.swo
-*~
+*.swn
 
-# OS files
-.DS_Store
-Thumbs.db
+# Ignore custom config files
+*.env
+.env.local
+.env.*
+!.env.example
+docker-compose.override.yml

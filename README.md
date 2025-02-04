@@ -1,80 +1,107 @@
-# Lascaux Backend
+# Lascaux v3 Documentation
 
-Lascaux is a decentralized, text-based social media platform designed to empower users through distributed moderation and open-source development. Using Telestai's wallet-based authentication system, Lascaux ensures secure and decentralized user identity, content creation, and moderation. Users will be able to run their own instances of Lascaux, interact with other nodes, and contribute to the platform through open-source collaboration.
+## Overview
 
-## Features:
-- **Wallet-Based Authentication**: Users authenticate using a signature from their Telestai wallet.
-- **Hybrid-Decentralized Architecture**: Content is stored in a Cassandra database with long-term storage on IPFS for redundancy.
-- **Voting-Based Moderation**: Community voting drives content approval and moderation, with potential AI assistance.
-- **Open Source**: Lascaux is open-source, allowing users to fork, run their own instances, and contribute to the platform.
+This application is a social platform API built with FastAPI and backed by a Cassandra database. It allows you to run your own Lascaux community. The application includes several endpoints for authentication, user management, posts, news, and votes.
+
+## Prerequisites
+
+- Python >=3.10
+- `pip` for managing Python packages
+- `make` utility
+- Cassandra database (automatically pulled andstarted by the application)
 
 ## Installation
 
-1. Clone the repository:
+1. **Clone the Repository:**
+
+   Clone the repository to your local machine.
+
    ```bash
-   git clone https://github.com/Telestai-Project/lascaux-backend.git
-   cd lascaux-backend
+   git clone <repository-url>
+   cd <repository-directory>
    ```
 
-2. Install dependencies:
+2. **Install Dependencies:**
+
+   Use the `make` command to install all necessary Python packages.
+
    ```bash
-   pip install -r requirements.txt
+   make install
    ```
 
-3. Start the Cassandra database:
-   ```bash
-   python start_cassandra.py
+## Running the Application
+
+To start the application, use the `make` command:
+
+```bash
+make run_app
+```
+
+This command will execute the `run_app` target in the Makefile, which runs the FastAPI application located at `app/start_application.py`.
+
+## Health Check
+
+Once the application is running, you can perform a health check by accessing the `/healthcheck` endpoint:
+
+```bash
+http://<your-server-address>/healthcheck
+```
+
+This should return a JSON response indicating the status of the application:
+
+```json
+{
+  "status": "ok"
+}
+```
+
+## Development Note
+
+The `run_bot` command is currently in development and not officially supported. It is intended for future features and should not be used in production environments.
+
+## Setting Up a systemd Service
+
+To ensure that your application runs as a service and restarts automatically on failure, you can create a `systemd` service file.
+
+1. **Create a systemd Service File:**
+
+   Create a new file at `/etc/systemd/system/lascaux-node.service` with the following content:
+
+   ```ini
+   [Unit]
+   Description=Lascaux Node
+   After=network.target
+
+   [Service]
+   Type=simple
+   WorkingDirectory=/path/to/your/repository
+   ExecStart=/usr/bin/make run_app
+   Restart=on-failure
+   User=your-username
+   Group=your-groupname
+
+   [Install]
+   WantedBy=multi-user.target
    ```
 
-5. Run the FastAPI application:
+   Replace `/path/to/your/repository`, `your-username`, and `your-groupname` with the appropriate values for your setup.
+
+2. **Enable and Start the Service:**
+
+   Enable the service to start on boot and start it immediately:
+
    ```bash
-   uvicorn app.main:app --reload
+   sudo systemctl enable myapp.service
+   sudo systemctl start myapp.service
    ```
 
-## Routes
+3. **Check Service Status:**
 
-### Authentication
-- **`POST /auth/login`**: Authenticates a user via their Telestai wallet.
-- **`POST /auth/register`**: Registers a new user with their Telestai wallet.
-- **`POST /auth/verify`**: Verifies a signed message for sensitive actions.
-- **`POST /auth/refresh`**: Refreshes the session token.
+   You can check the status of your service with:
 
-### Profile Management
-- **`GET /profile/{wallet_address}`**: Fetches a user's profile details.
-- **`PUT /profile/{wallet_address}`**: Updates the profile details of the user.
-- **`POST /profile/complete`**: Completes a user's profile after initial registration.
+   ```bash
+   sudo systemctl status myapp.service
+   ```
 
-### Content Management
-- **`POST /content/create`**: Submits new content to the platform.
-- **`GET /content/{content_id}`**: Retrieves content by its unique content ID.
-- **`POST /content/edit/{content_id}`**: Allows a user to edit their own content.
-- **`DELETE /content/{content_id}`**: Deletes a user’s content.
-
-### Voting & Moderation
-- **`POST /content/{content_id}/vote`**: Submits a vote for or against a piece of content.
-- **`GET /content/{content_id}/votes`**: Retrieves the current vote count.
-- **`POST /content/{content_id}/moderate`**: Flags content for moderation.
-
-### Node Synchronization
-- **`GET /node/sync`**: Requests synchronization data from another node.
-- **`POST /node/push`**: Pushes data from one node to another.
-
-### IPFS Integration
-- **`POST /ipfs/push`**: Uploads content to IPFS.
-- **`GET /ipfs/{ipfs_hash}`**: Retrieves content from IPFS.
-
-### Miscellaneous
-- **`GET /healthcheck`**: Checks if the node is running.
-- **`GET /nodes/available`**: Lists all currently available nodes.
-
-## Requirements
-
-- Python 3.8+
-- FastAPI
-- Uvicorn
-- Cassandra
-- Pytest
-- HTTPX
-
-## Contributing
-Lascaux is open-source, and we welcome contributions. Fork the repository, create a branch, and submit a pull request with your changes. For large changes, please open an issue first to discuss what you’d like to modify. **Contributions will be rewarded**.
+This setup will ensure that your application runs continuously and restarts automatically if it crashes.
