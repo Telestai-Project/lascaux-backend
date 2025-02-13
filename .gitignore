@@ -87,3 +87,6 @@ profiling/
 .env.*
 !.env.example
 docker-compose.override.yml
+
+# SSL certificates
+ssl/
