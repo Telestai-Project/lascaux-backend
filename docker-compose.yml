@@ -1,0 +1,39 @@
+services:
+  cassandra:
+    container_name: lasko_cassandra
+    image: cassandra:latest
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+      - ./ssl:/etc/cassandra/ssl
+      - ./cassandra.yaml:/etc/cassandra/cassandra.yaml
+      - ./init-cassandra.sh:/init-cassandra.sh
+      - ./.env:/.env
+    environment:
+      - CASSANDRA_CLUSTER_NAME=cassandra
+    networks:
+      - internal_network # Connect Cassandra to the private network
+    command: ["/bin/bash", "/init-cassandra.sh"]
+    restart: unless-stopped
+
+  app:
+    container_name: lasko_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lasko_app_image
+    ports:
+      - "8000:8000"
+    depends_on:
+      - cassandra
+    networks:
+      - internal_network  # Connect API to the private network
+      - public_network  # For external access
+    restart: unless-stopped
+
+volumes:
+  cassandra_data:
+
+networks:
+  internal_network:
+    internal: true  # Private network prevents outside access
+  public_network:  # Allow API exposure
