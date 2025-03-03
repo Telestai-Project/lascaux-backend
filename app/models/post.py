@@ -73,6 +73,10 @@ class ReplyUpdate(BaseModel):
     view_cost: Optional[Decimal]
     creation_cost: Optional[Decimal]
 
+class RepostCreate(BaseModel):
+    post_id: UUID
+    user_id: UUID
+
 class EvaluateRequest(BaseModel):
     content: str
 

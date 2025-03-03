@@ -15,6 +15,14 @@ async def get_all_users():
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
+@user_router.get("/{user_id}", response_model=UserResponse)
+async def get_user(user_id: UUID):
+    try:
+        user = await UserService.get_user_by_id(user_id)
+        return user
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
 @user_router.put("/update/{user_id}", response_model=UserResponse)
 async def update_user(user_id: UUID, user: UserUpdate):
     try:

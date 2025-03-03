@@ -1,7 +1,7 @@
 from typing import List
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, Request, status, Query
-from app.models.post import EvaluateRequest, EvaluateResponse, PostBase, PostResponse, PostCreate, PostUpdate, ReplyCreate, ReplyResponse, ReplyUpdate
+from app.models.post import EvaluateRequest, EvaluateResponse, RepostCreate, PostResponse, PostCreate, PostUpdate, ReplyCreate, ReplyResponse, ReplyUpdate
 from app.domain.services.post_service import PostService
 
 post_router = APIRouter(prefix="/posts")
@@ -16,6 +16,14 @@ async def create_post(post: PostCreate):
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@post_router.post("/repost", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
+async def repost_post(repost: RepostCreate):
+    try:
+        repost_response = await PostService.repost_post(repost)
+        return repost_response
+    except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @post_router.post("/evaluate", response_model=EvaluateResponse)
