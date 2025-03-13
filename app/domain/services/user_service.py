@@ -44,6 +44,8 @@ class UserService:
             fetch_user.rank = user.rank
         if user.followers is not None:
             fetch_user.followers = user.followers
+        if user.following is not None:
+            fetch_user.following = user.following
         fetch_user.updated_at = datetime.now(timezone.utc)
         fetch_user.save()
         badges = await BadgeRepository.get_badges_by_user_id(fetch_user.id)
@@ -72,6 +74,9 @@ class UserService:
                         })
                 badges = await BadgeRepository.get_badges_by_user_id(fetch_user.id)
                 fetch_user.badges = [badge.badge_name for badge in badges]
+                user = await UserRepository.get_by_user_id(user_id)
+                user.following.append(follower_id)
+                user.save()
                 return fetch_user
             else:
                 raise HTTPException(status_code=400, detail="User already follows this user")
@@ -91,6 +96,9 @@ class UserService:
                 fetch_user.save()
                 badges = await BadgeRepository.get_badges_by_user_id(fetch_user.id)
                 fetch_user.badges = [badge.badge_name for badge in badges]
+                user = await UserRepository.get_by_user_id(user_id)
+                user.following.remove(follower_id)
+                user.save()
                 return fetch_user
             else:
                 raise HTTPException(status_code=400, detail="User does not follow this user")

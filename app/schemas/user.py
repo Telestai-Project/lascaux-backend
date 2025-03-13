@@ -11,7 +11,7 @@ class UserBase(BaseModel):
     roles: List[str] = Field(default=["general"], description="Roles assigned to the user")
     rank: Optional[str] = Field(None, description="Rank of the user")
     followers: List[UUID] = Field(default=[], description="List of followers the user has")
-
+    following: List[UUID] = Field(default=[], description="List of users the user is following")
 class UserCreate(UserBase):
     signature: str
     challenge: str

@@ -18,7 +18,7 @@ class BadgeRepository:
     
     @staticmethod
     async def get_badge_by_user_id_and_badge_name(user_id: UUID, badge_name: str) -> Badge:
-        return Badge.objects(user_id=user_id, badge_name=badge_name).first()
+        return Badge.objects(user_id=user_id, badge_name=badge_name).allow_filtering().first()
     
     @staticmethod
     async def get_all_badges() -> List[Badge]:

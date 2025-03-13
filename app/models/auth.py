@@ -41,4 +41,5 @@ class UserInfo(BaseModel):
     invited_by: Optional[UUID]
     rank: Optional[str] = None
     followers: List[UUID] = []
+    following: List[UUID] = []
     badges: List[str] = []

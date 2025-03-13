@@ -16,5 +16,6 @@ class User(Model):
     invited_by = columns.UUID()
     rank = columns.Text(default=None)
     followers = columns.List(columns.UUID(), default=[])
+    following = columns.List(columns.UUID(), default=[])
 
 

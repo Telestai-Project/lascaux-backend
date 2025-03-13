@@ -58,6 +58,7 @@ class AuthService:
             invited_by=db_user.invited_by,
             rank=db_user.rank,
             followers=db_user.followers,
+            following=db_user.following,
             badges=db_user.badges or []
         ).model_dump()
 
@@ -107,6 +108,7 @@ class AuthService:
             invited_by=db_user.invited_by,
             rank=db_user.rank,
             followers=db_user.followers,
+            following=db_user.following,
             badges=db_user.badges or []
         ).model_dump()
         return Token(
@@ -192,6 +194,7 @@ class AuthService:
                 invited_by=user.invited_by,
                 rank=user.rank,
                 followers=user.followers,
+                following=user.following,
                 badges=user.badges
             ).model_dump()
 

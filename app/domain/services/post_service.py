@@ -75,7 +75,7 @@ class PostService:
                     "mentioned_user_id": mentioned_user['id'],
                     "created_at": datetime.now(timezone.utc),
                 })
-                
+        
         if is_first_post:
             existing_badge = await BadgeRepository.get_badge_by_user_id_and_badge_name(user.id, "First Post")
             if existing_badge is None:
